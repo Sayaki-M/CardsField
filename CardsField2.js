@@ -69,10 +69,10 @@ phina.define('MainScene', {
     this.deck=Deck();
     this.player=Player(self);
     this.field=Field();
-    for(var i=0;i<3;i++){
+    /*for(var i=0;i<3;i++){
       this.getCard();
-    }
-    this.prepare(this.player.cards);
+    }*/
+    //this.prepare(this.player.cards);
     this.setButtons();
   },
   setButtons:function(){
@@ -144,23 +144,6 @@ phina.define('Card',{
     }else{
       this.stroke='purple';
       this.strokeWidth=4;
-      if((Math.abs(this.x-SEND_SPACE_F[0])<SPACE[0]/2)&&(Math.abs(this.y-SEND_SPACE_F[1])<SPACE[1]/2)){
-        this.putonp();
-      }
-      if((Math.abs(this.x-SEND_SPACE_P[0])<SPACE[0]/2)&&(Math.abs(this.y-SEND_SPACE_P[1])<SPACE[1]/2)){
-        this.putonf();
-      }
-      if((Math.abs(this.x-TURN_SPACE_F[0])<SPACE[0]/2)&&(Math.abs(this.y-TURN_SPACE_F[1])<SPACE[1]/2)){
-        this.putonf();
-        this.turn();
-      }
-      if((Math.abs(this.x-TURN_SPACE_P[0])<SPACE[0]/2)&&(Math.abs(this.y-TURN_SPACE_P[1])<SPACE[1]/2)){
-        this.putonp();
-        this.turn();
-      }
-      if((Math.abs(this.x-REMOVE_SPACE_F[0])<SPACE[0]/2)&&(Math.abs(this.y-REMOVE_SPACE_F[1])<SPACE[1]/2)){
-        this.remove();
-      }
     }
     if(this.front){
       this.fill='white';
@@ -171,19 +154,44 @@ phina.define('Card',{
     }
   },
   putonf:function(){
-    this.x=PUT_SPACE_F[0];
-    this.y=PUT_SPACE_F[1];
+    this.moveTo(PUT_SPACE_F[0],PUT_SPACE_F[1]);
     this.field="field";
   },
   putonp:function(){
-    this.x=PUT_SPACE_P[0];
-    this.y=PUT_SPACE_P[1];
+    this.moveTo(PUT_SPACE_P[0],PUT_SPACE_P[1]);
     this.field="player";
+  },
+  //クリック開始時の動き
+  onpointstart:function(){
+    this.active=true;
   },
   //クリック終了時の動き
   onpointend:function(){
+    this.active=false;
+    if((Math.abs(this.x-SEND_SPACE_F[0])<SPACE[0]/2)&&(Math.abs(this.y-SEND_SPACE_F[1])<SPACE[1]/2)){
+      this.putonp();
+      this.front=true;
+    }
+    if((Math.abs(this.x-SEND_SPACE_P[0])<SPACE[0]/2)&&(Math.abs(this.y-SEND_SPACE_P[1])<SPACE[1]/2)){
+      this.putonf();
+    }
+    if((Math.abs(this.x-TURN_SPACE_F[0])<SPACE[0]/2)&&(Math.abs(this.y-TURN_SPACE_F[1])<SPACE[1]/2)){
+      this.putonf();
+      this.turn();
+    }
+    if((Math.abs(this.x-TURN_SPACE_P[0])<SPACE[0]/2)&&(Math.abs(this.y-TURN_SPACE_P[1])<SPACE[1]/2)){
+      this.putonp();
+      this.turn();
+    }
+    if((Math.abs(this.x-REMOVE_SPACE_F[0])<SPACE[0]/2)&&(Math.abs(this.y-REMOVE_SPACE_F[1])<SPACE[1]/2)){
+      this.remove();
+    }
+  },
+  /*以前の仕様
+  onpointend:function(){
     this.active=!(this.active);
   },
+  */
   //クリック中の動き
   onpointmove:function(e){
     if(this.active){
