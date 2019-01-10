@@ -88,6 +88,16 @@ phina.define('MainScene', {
       var suit=Math.ceil(cnum/13);
       var num =(cnum%13);
       var card=Card(PUT_SPACE_F[0],PUT_SPACE_F[1],num,suit,position="field",front=false).addChildTo(self.group);
+      card.onpointstart=function(){
+        card.active=true;
+        self.group.children.forEach(function(nya,i){
+          self.group.children.forEach(function(targ,j){
+            if(nya.hitTestElement(targ)&&j<i){
+              targ.active=false;
+            }
+          });
+        });
+      };
     };
     this.getcard.update=function(){
       if (self.deck.cards[0]==null){
@@ -113,6 +123,7 @@ phina.define('MainScene', {
       nya[i]=Card(SIDE_PADDING+x*i+CARD_WIDTH/2,y,num,suit,position="player",front=true).addChildTo(this.group);
     }
   },
+
 });
 
 /*カードクラス*/
