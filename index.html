@@ -5,7 +5,7 @@
     <meta charset='utf-8' />
     <meta name="viewport" content="width=device-width, user-scalable=no" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-
+    <meta name="Content-Style-Type" content="text/css">
     <title>CardsField</title>
     <!-- phina.js を読み込む -->
     <script src='http://cdn.rawgit.com/phi-jp/phina.js/v0.2.0/build/phina.js'></script>
@@ -15,6 +15,8 @@
 
   </head>
   <body>
-
+    <form onsubmit="return false" style="margin:0 auto; width:100px">
+      <input id='input' maxlength="6" pattern="^[0-9]+$">
+    </form>
   </body>
 </html>
