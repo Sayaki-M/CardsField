@@ -4,6 +4,7 @@ phina.globalize();
 var ASSETS={
   image:{
     gara: "gara.png",
+    logo: "logo.png",
   },
 }
 var SUITS={
@@ -58,21 +59,10 @@ phina.define('MainScene', {
     this.bg=Sprite("gara").addChildTo(this);
     this.bg.origin.set(0,0);
     this.group=DisplayElement().addChildTo(this);
-    /*var num = 8;
-    var x= (SCREEN_WIDTH-2*SIDE_PADDING-CARD_WIDTH)/num;
-    var y=(SCREEN_HEIGHT-PLAYER_HEIGHT-FIELD_HEIGHT/2);
-    var cards=[];
-    for(var i=0;i<num;i++){
-      //cards[i]=Card(SIDE_PADDING+x*i+CARD_WIDTH,y).addChildTo(this.group);
-    }*/
     var self=this;
     this.deck=Deck();
     this.player=Player(self);
     this.field=Field();
-    /*for(var i=0;i<3;i++){
-      this.getCard();
-    }*/
-    //this.prepare(this.player.cards);
     this.setButtons();
   },
   setButtons:function(){
@@ -133,6 +123,11 @@ phina.define('TitleScene',{
     this.superInit();
     this.group=DisplayElement().addChildTo(this);
     this.backgroundColor='lightblue';
+    this.bg=Sprite("logo").addChildTo(this.group);
+    this.bg.x=this.gridX.center();
+    this.bg.y=this.gridY.center()*5/6;
+    this.bg.scaleX-=0.2;
+    this.bg.scaleY-=0.2;
     this.label=Label('CardsField').addChildTo(this);
     this.label.x=this.gridX.center();
     this.label.y=this.gridY.center();
@@ -182,6 +177,7 @@ phina.define('RuleScene',{
     goButton.onpointend=function(){
       self.exit();
     };
+    var rule=Rule().addChildTo(this.group);
   },
 });
 
@@ -336,11 +332,6 @@ phina.define('Card',{
       this.remove();
     }
   },
-  /*以前の仕様
-  onpointend:function(){
-    this.active=!(this.active);
-  },
-  */
   //クリック中の動き
   onpointmove:function(e){
     if(this.active){
@@ -447,6 +438,42 @@ phina.define("Field",{
   init: function(){
     this.superInit();
   },
+});
+//ルールクラス
+phina.define("Rule",{
+  superClass:"RectangleShape",
+  init:function(label="member",values=["nya","wan","kon"],y=100){
+    this.superInit({
+      width: 400,
+      height: 80,
+      fill:"white",
+      x:SCREEN_WIDTH/2,
+      y:y,
+    });
+    this.valnum=0;
+    this.group=DisplayElement().addChildTo(this);
+    this.label=Label({text:label,x:-100}).addChildTo(this.group);
+    this.values=values;
+    this.value=Label({text:this.values[0],x:100}).addChildTo(this.group);
+    this.smaller=TriangleShape({x:50,y:0,radius:30,rotation:30,}).addChildTo(this.group);
+    this.smaller.setInteractive(true);
+    self=this;
+    this.smaller.onpointend=function(){
+      if(self.valnum>=1){
+        self.valnum-=1;
+        self.value.text=self.values[self.valnum];
+      }
+    };
+    this.larger=TriangleShape({x:150,y:0,radius:30,rotation:-30}).addChildTo(this.group);
+    this.larger.setInteractive(true);
+    this.larger.onpointend=function(){
+      if(self.valnum<=self.values.length-2){
+        self.valnum+=1;
+        self.value.text=self.values[self.valnum];
+      }
+    };
+  },
+
 });
 // メイン処理
 phina.main(function() {
