@@ -113,6 +113,10 @@ phina.define('MainScene', {
       nya[i]=Card(SIDE_PADDING+x*i+CARD_WIDTH/2,y,num,suit,position="player",front=true).addChildTo(this.group);
     }
   },
+  //showcard: function(x,y,){
+
+
+  //},
 
 });
 
@@ -149,7 +153,7 @@ phina.define('TitleScene',{
       fill: 'blue',
       fontColor: 'white',
     }).addChildTo(this.group);
-    self=this;
+    var self=this;
     enterRoomButton.onpointend=function(){
       self.exit('EnterRoomScene');
     };
@@ -163,21 +167,19 @@ phina.define('RuleScene',{
     this.superInit();
     this.group=DisplayElement().addChildTo(this);
     this.backgroundColor='yellowgreen';
-    this.label=Label('Rule').addChildTo(this.group);
-    this.label.x=this.gridX.center();
-    this.label.y=this.gridY.center();
-    var goButton=Button({
+    this.label=Label({text:'Rule',x:this.gridX.center(),y:this.gridY.center()}).addChildTo(this.group);
+    this.goButton=Button({
       x: this.gridX.center(),
       y: this.gridY.center()*3/2,
       text: "Go",
       fill: 'blue',
       fontColor: 'white',
     }).addChildTo(this.group);
-    self=this;
-    goButton.onpointend=function(){
+    var self=this;
+    this.goButton.onpointstart=function(){
       self.exit();
     };
-    var rule=Rule().addChildTo(this.group);
+    this.rulebar=Rulebar().addChildTo(this.group);
   },
 });
 
@@ -201,7 +203,7 @@ phina.define('MakeRoomScene',{
       fill: 'blue',
       fontColor: 'white',
     }).addChildTo(this.group);
-    self=this;
+    var self=this;
     goButton.onpointend=function(){
       self.exit();
     };
@@ -252,7 +254,7 @@ phina.define('EnterRoomScene',{
       fill: 'blue',
       fontColor: 'white',
     }).addChildTo(this.group);
-    self=this;
+    var self=this;
     goButton.onpointend=function(){
       self.exit();
     };
@@ -440,8 +442,8 @@ phina.define("Field",{
   },
 });
 //ルールクラス
-phina.define("Rule",{
-  superClass:"RectangleShape",
+phina.define('Rulebar',{
+  superClass:'RectangleShape',
   init:function(label="member",values=["nya","wan","kon"],y=100){
     this.superInit({
       width: 400,
@@ -454,11 +456,11 @@ phina.define("Rule",{
     this.group=DisplayElement().addChildTo(this);
     this.label=Label({text:label,x:-100}).addChildTo(this.group);
     this.values=values;
-    this.value=Label({text:this.values[0],x:100}).addChildTo(this.group);
+    this.value=Label({text:this.values[this.valnum],x:100}).addChildTo(this.group);
     this.smaller=TriangleShape({x:50,y:0,radius:30,rotation:30,}).addChildTo(this.group);
     this.smaller.setInteractive(true);
     self=this;
-    this.smaller.onpointend=function(){
+    this.smaller.onpointstart=function(){
       if(self.valnum>=1){
         self.valnum-=1;
         self.value.text=self.values[self.valnum];
@@ -466,7 +468,7 @@ phina.define("Rule",{
     };
     this.larger=TriangleShape({x:150,y:0,radius:30,rotation:-30}).addChildTo(this.group);
     this.larger.setInteractive(true);
-    this.larger.onpointend=function(){
+    this.larger.onpointstart=function(){
       if(self.valnum<=self.values.length-2){
         self.valnum+=1;
         self.value.text=self.values[self.valnum];
