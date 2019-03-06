@@ -69,7 +69,7 @@ phina.define('MainScene', {
     //山札をめくるボタン
     var x=PUT_SPACE_F[0]+SPACE[0]/2+CARD_WIDTH/2+5;
     var y=PUT_SPACE_F[1];
-    self=this;
+    var self=this;
     this.getcard=Rectangle(x=x,y=y).addChildTo(this.group);
     this.getcard.text=Label("山\n札").addChildTo(this.getcard);
     this.getcard.setInteractive(true);
@@ -122,19 +122,11 @@ phina.define('MainScene', {
 
 //TitleSceneクラスを定義
 phina.define('TitleScene',{
-  superClass:'DisplayScene',
+  superClass:'BaseScene',
   init:function(){
-    this.superInit();
+    this.superInit(secretkey="default");
     this.group=DisplayElement().addChildTo(this);
     this.backgroundColor='lightblue';
-    this.bg=Sprite("logo").addChildTo(this.group);
-    this.bg.x=this.gridX.center();
-    this.bg.y=this.gridY.center()*5/6;
-    this.bg.scaleX-=0.2;
-    this.bg.scaleY-=0.2;
-    this.label=Label('CardsField').addChildTo(this);
-    this.label.x=this.gridX.center();
-    this.label.y=this.gridY.center();
     var makeRoomButton=Button({
       x: this.gridX.center()/2,
       y: this.gridY.center()*3/2,
@@ -142,9 +134,12 @@ phina.define('TitleScene',{
       fill: 'blue',
       fontColor: 'white',
     }).addChildTo(this.group);
-    self=this;
+    var self=this;
     makeRoomButton.onpointend=function(){
-      self.exit('RuleScene');
+      self.exit({
+        nextLabel:'RuleScene',
+        secretkey: this.secretkey,
+      });
     };
     var enterRoomButton=Button({
       x: this.gridX.center()*3/2,
@@ -153,31 +148,33 @@ phina.define('TitleScene',{
       fill: 'blue',
       fontColor: 'white',
     }).addChildTo(this.group);
-    var self=this;
     enterRoomButton.onpointend=function(){
-      self.exit('EnterRoomScene');
+      self.exit({
+        nextLabel:'EnterRoomScene',
+        secretkey: this.secretkey,
+      });
     };
+    this.setSecretKey("nya");
+  },
+  setSecretKey: function(secretkey){
+    this.secretkey=secretkey;
   },
 });
 
 //RuleSceneクラスを定義
 phina.define('RuleScene',{
-  superClass:'DisplayScene',
-  init:function(){
-    this.superInit();
+  superClass:'BaseScene',
+  init:function(param){
+    this.superInit(param.secretkey);
     this.group=DisplayElement().addChildTo(this);
     this.backgroundColor='yellowgreen';
-    this.label=Label({text:'Rule',x:this.gridX.center(),y:this.gridY.center()}).addChildTo(this.group);
-    this.goButton=Button({
-      x: this.gridX.center(),
-      y: this.gridY.center()*3/2,
-      text: "Go",
-      fill: 'blue',
-      fontColor: 'white',
-    }).addChildTo(this.group);
+    this.goButton=GoButton().addChildTo(this.group);
     var self=this;
     this.goButton.onpointstart=function(){
-      self.exit();
+      self.exit({
+        nextLabel:'MakeRoomScene',
+        secretkey: this.secretkey,
+      });
     };
     this.rulebar=Rulebar().addChildTo(this.group);
   },
@@ -185,27 +182,23 @@ phina.define('RuleScene',{
 
 //MakeRoomSceneクラスを定義
 phina.define('MakeRoomScene',{
-  superClass:'DisplayScene',
-  init:function(){
-    this.superInit();
+  superClass:'BaseScene',
+  init:function(param){
+    this.superInit(param.secretkey);
     this.group=DisplayElement().addChildTo(this);
     this.backgroundColor='lime';
-    this.label=Label("MakeRoom").addChildTo(this.group);
-    this.roomNumber=Label("12345").addChildTo(this.group);
-    this.label.x=this.gridX.center();
-    this.label.y=this.gridY.center();
-    this.roomNumber.x=this.gridX.center();
-    this.roomNumber.y=this.gridY.center()*4/3;
-    var goButton=Button({
-      x: this.gridX.center(),
-      y: this.gridY.center()*3/2,
-      text: "Go",
-      fill: 'blue',
-      fontColor: 'white',
+    this.roomNumber=Label({
+      text:"12345",
+      x:this.gridX.center(),
+      y:this.gridY.center()*4/3,
     }).addChildTo(this.group);
+    var goButton=GoButton().addChildTo(this.group);
     var self=this;
     goButton.onpointend=function(){
-      self.exit();
+      self.exit({
+        nextLabel:'MainScene',
+        secretkey: this.secretkey,
+      });
     };
     this.setLabel("12345");
   },
@@ -216,14 +209,11 @@ phina.define('MakeRoomScene',{
 
 //EnterRoomSceneクラスを定義
 phina.define('EnterRoomScene',{
-  superClass:'DisplayScene',
-  init:function(){
-    this.superInit();
+  superClass:'BaseScene',
+  init:function(param){
+    this.superInit(param.secretkey);
     this.group=DisplayElement().addChildTo(this);
     this.backgroundColor='pink';
-    this.label=Label('EnterRoom').addChildTo(this);
-    this.label.x=this.gridX.center();
-    this.label.y=this.gridY.center();
     var input = document.querySelector('#input');
     input.oninput = function() {
       enterNumber.text.text = input.value;
@@ -238,7 +228,7 @@ phina.define('EnterRoomScene',{
       stroke:'gray',
       strokeWidth:1,
       fill:'yellow',
-    }).addChildTo(this);
+    }).addChildTo(this.group);
     enterNumber.text=Label({
       text:'put your\nroom number',
       fontSize:24,
@@ -247,36 +237,49 @@ phina.define('EnterRoomScene',{
     enterNumber.onpointstart = function() {
       input.focus();
     };
-    var goButton=Button({
-      x: this.gridX.center(),
-      y: this.gridY.center()*3/2,
-      text: "Go",
-      fill: 'blue',
-      fontColor: 'white',
-    }).addChildTo(this.group);
+    var goButton=GoButton().addChildTo(this.group);
     var self=this;
     goButton.onpointend=function(){
-      self.exit();
+      self.exit({
+        nextLabel:'MainScene',
+        secretkey: this.secretkey,
+      });
     };
   },
 });
-
-
+//Sceneの基本デザインを定義
+phina.define('BaseScene',{
+  superClass: 'DisplayScene',
+  init: function(secretkey){
+    this.superInit();
+    this.group=DisplayElement().addChildTo(this);
+    this.bg=Sprite("logo").addChildTo(this.group);
+    this.bg.x=this.gridX.center();
+    this.bg.y=this.gridY.center()*5/6;
+    this.bg.scaleX-=0.2;
+    this.bg.scaleY-=0.2;
+    this.secretkey=secretkey;
+  },
+});
 /*カードクラス*/
 phina.define('Card',{
   //クラス継承
   superClass:'Rectangle',
   //初期化
   init: function(x,y,num=2,suit=2,position="field",front=false){
-    this.superInit({x:x,y:y,position:position,front:front,num:num,suit:suit});
+    this.superInit({x:x,y:y});
     this.group=DisplayElement().addChildTo(this);
     this.x=x;
     this.y=y;
     this.active=false;
-    this.group.number=Label(NUMS[num]).addChildTo(this.group);
-    this.group.number.y=CARD_HEIGHT/4;
-    this.group.suit=Label(SUITS[suit]).addChildTo(this.group);
-    this.group.suit.y=-CARD_HEIGHT/4;
+    this.group.suit=Label({
+      text:SUITS[suit],
+      y:-CARD_HEIGHT/4,
+    }).addChildTo(this.group);
+    this.group.number=Label({
+      text:NUMS[num],
+      y:CARD_HEIGHT/4,
+    }).addChildTo(this.group);
     this.setInteractive(true);
     this.field=position;
     this.front=front;  //表：true
@@ -477,6 +480,20 @@ phina.define('Rulebar',{
   },
 
 });
+//goボタンクラス
+phina.define('GoButton',{
+  superClass:'Button',
+  init: function(){
+    this.superInit({
+      x: SCREEN_WIDTH/2,
+      y: SCREEN_HEIGHT*3/4,
+      text: "Go",
+      fill: 'blue',
+      fontColor: 'white',
+    });
+  },
+});
+
 // メイン処理
 phina.main(function() {
   // アプリケーション生成
