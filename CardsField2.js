@@ -7,26 +7,59 @@ var ASSETS={
     logo: "logo.png",
   },
 }
-var SUITS={
-  1:"ス",
-  2:"ハ",
-  3:"ダ",
-  4:"ク",
-}
-var NUMS={
-  1:"A",
-  2:"2",
-  3:"3",
-  4:"4",
-  5:"5",
-  6:"6",
-  7:"7",
-  8:"8",
-  9:"9",
-  10:"10",
-  11:"J",
-  12:"Q",
-  0:"K",
+var CARDS={
+  0: {suit:"ス", num: "A"},
+  1: {suit:"ス", num: "2"},
+  2: {suit:"ス", num: "3"},
+  3: {suit:"ス", num: "4"},
+  4: {suit:"ス", num: "5"},
+  5: {suit:"ス", num: "6"},
+  6: {suit:"ス", num: "7"},
+  7: {suit:"ス", num: "8"},
+  8: {suit:"ス", num: "9"},
+  9: {suit:"ス", num: "10"},
+  10: {suit:"ス", num: "J"},
+  11: {suit:"ス", num: "Q"},
+  12: {suit:"ス", num: "K"},
+  13: {suit:"ハ", num: "A"},
+  14: {suit:"ハ", num: "2"},
+  15: {suit:"ハ", num: "3"},
+  16: {suit:"ハ", num: "4"},
+  17: {suit:"ハ", num: "5"},
+  18: {suit:"ハ", num: "6"},
+  19: {suit:"ハ", num: "7"},
+  20: {suit:"ハ", num: "8"},
+  21: {suit:"ハ", num: "9"},
+  22: {suit:"ハ", num: "10"},
+  23: {suit:"ハ", num: "J"},
+  24: {suit:"ハ", num: "Q"},
+  25: {suit:"ハ", num: "K"},
+  26: {suit:"ダ", num: "A"},
+  27: {suit:"ダ", num: "2"},
+  28: {suit:"ダ", num: "3"},
+  29: {suit:"ダ", num: "4"},
+  30: {suit:"ダ", num: "5"},
+  31: {suit:"ダ", num: "6"},
+  32: {suit:"ダ", num: "7"},
+  33: {suit:"ダ", num: "8"},
+  34: {suit:"ダ", num: "9"},
+  35: {suit:"ダ", num: "10"},
+  36: {suit:"ダ", num: "J"},
+  37: {suit:"ダ", num: "Q"},
+  38: {suit:"ダ", num: "K"},
+  39: {suit:"ク", num: "A"},
+  40: {suit:"ク", num: "2"},
+  41: {suit:"ク", num: "3"},
+  42: {suit:"ク", num: "4"},
+  43: {suit:"ク", num: "5"},
+  44: {suit:"ク", num: "6"},
+  45: {suit:"ク", num: "7"},
+  46: {suit:"ク", num: "8"},
+  47: {suit:"ク", num: "9"},
+  48: {suit:"ク", num: "10"},
+  49: {suit:"ク", num: "J"},
+  50: {suit:"ク", num: "Q"},
+  51: {suit:"ク", num: "K"},
 }
 var SCREEN_WIDTH=640;
 var SCREEN_HEIGHT=960;
@@ -59,11 +92,12 @@ phina.define('MainScene', {
     this.bg=Sprite("gara").addChildTo(this);
     this.bg.origin.set(0,0);
     this.group=DisplayElement().addChildTo(this);
+    this.setButtons();
+    this.cardgroup=DisplayElement().addChildTo(this.group);
     var self=this;
     this.deck=Deck();
     this.player=Player(self);
     this.field=Field();
-    this.setButtons();
   },
   setButtons:function(){
     //山札をめくるボタン
@@ -77,7 +111,7 @@ phina.define('MainScene', {
       var cnum=self.getCard();
       var suit=Math.ceil(cnum/13);
       var num =(cnum%13);
-      var card=Card(PUT_SPACE_F[0],PUT_SPACE_F[1],num,suit,position="field",front=false).addChildTo(self.group);
+      var card=Card(PUT_SPACE_F[0],PUT_SPACE_F[1],num,suit,position="field",front=false).addChildTo(self.cardgroup);
       card.onpointstart=function(){
         card.active=true;
         self.group.children.forEach(function(nya,i){
@@ -106,18 +140,23 @@ phina.define('MainScene', {
   prepare: function(cards){
     var x= (SCREEN_WIDTH-2*SIDE_PADDING-CARD_WIDTH)/(cards.length-1);
     var y=(SCREEN_HEIGHT-PLAYER_HEIGHT/2);
-    var nya=[];
     for(var i=0;i<cards.length;i++){
       var suit=Math.ceil(cards[i]/13);
       var num =(cards[i]%13);
-      nya[i]=Card(SIDE_PADDING+x*i+CARD_WIDTH/2,y,num,suit,position="player",front=true).addChildTo(this.group);
+      var card=Card(SIDE_PADDING+x*i+CARD_WIDTH/2,y,num,suit,position="player",front=true).addChildTo(this.group);
     }
   },
   //showcard: function(x,y,){
 
 
   //},
-
+  findCard: function(id){
+    var res;
+    this.group.children.forEach(function(card){
+      if(card.id=id){res=card;}
+    });
+    return res;
+  },
 });
 
 //TitleSceneクラスを定義
@@ -266,18 +305,19 @@ phina.define('Card',{
   //クラス継承
   superClass:'Rectangle',
   //初期化
-  init: function(x,y,num=2,suit=2,position="field",front=false){
+  init: function(x,y,position="field",front=false,id=null){
     this.superInit({x:x,y:y});
     this.group=DisplayElement().addChildTo(this);
     this.x=x;
     this.y=y;
     this.active=false;
+    this.id=id;
     this.group.suit=Label({
-      text:SUITS[suit],
+      text:CARDS[id].suit,
       y:-CARD_HEIGHT/4,
     }).addChildTo(this.group);
     this.group.number=Label({
-      text:NUMS[num],
+      text:CARDS[id].num,
       y:CARD_HEIGHT/4,
     }).addChildTo(this.group);
     this.setInteractive(true);
@@ -286,8 +326,6 @@ phina.define('Card',{
   },
 
   update: function(){
-    //this.label.x=0;
-    //this.label.y=CARD_HEIGHT/4;
     if(this.active){
       this.stroke='red';
       this.strokeWidth=8;
@@ -493,7 +531,6 @@ phina.define('GoButton',{
     });
   },
 });
-
 // メイン処理
 phina.main(function() {
   // アプリケーション生成
