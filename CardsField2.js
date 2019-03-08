@@ -109,9 +109,7 @@ phina.define('MainScene', {
     this.getcard.setInteractive(true);
     this.getcard.onpointend=function(){
       var cnum=self.getCard();
-      var suit=Math.ceil(cnum/13);
-      var num =(cnum%13);
-      var card=Card(PUT_SPACE_F[0],PUT_SPACE_F[1],num,suit,position="field",front=false).addChildTo(self.cardgroup);
+      var card=Card(PUT_SPACE_F[0],PUT_SPACE_F[1],id=cnum,position="field",front=false).addChildTo(self.cardgroup);
       card.onpointstart=function(){
         card.active=true;
         self.group.children.forEach(function(nya,i){
@@ -141,15 +139,14 @@ phina.define('MainScene', {
     var x= (SCREEN_WIDTH-2*SIDE_PADDING-CARD_WIDTH)/(cards.length-1);
     var y=(SCREEN_HEIGHT-PLAYER_HEIGHT/2);
     for(var i=0;i<cards.length;i++){
-      var suit=Math.ceil(cards[i]/13);
-      var num =(cards[i]%13);
-      var card=Card(SIDE_PADDING+x*i+CARD_WIDTH/2,y,num,suit,position="player",front=true).addChildTo(this.group);
+      var cnum=self.getCard();
+      var card=Card(SIDE_PADDING+x*i+CARD_WIDTH/2,y,id=cnum,field="player",front=true).addChildTo(this.group);
     }
   },
-  //showcard: function(x,y,){
+  /*showcard: function(x,y,id,){
 
 
-  //},
+  },*/
   findCard: function(id){
     var res;
     this.group.children.forEach(function(card){
@@ -305,13 +302,13 @@ phina.define('Card',{
   //クラス継承
   superClass:'Rectangle',
   //初期化
-  init: function(x,y,position="field",front=false,id=null){
+  init: function(x,y,id,field="field",front=false){
     this.superInit({x:x,y:y});
     this.group=DisplayElement().addChildTo(this);
-    this.x=x;
-    this.y=y;
     this.active=false;
     this.id=id;
+    this.x=x,
+    this.y=y,
     this.group.suit=Label({
       text:CARDS[id].suit,
       y:-CARD_HEIGHT/4,
@@ -451,12 +448,11 @@ phina.define("Deck",{
   superClass:"CardHolder",
   init: function(joker=0){
     this.superInit();
-    for(var i=1;i<=(52+joker);i++){
-      this.cards[i-1]=i;
+    for(var i=0;i<(52+joker);i++){
+      this.cards[i]=i;
     }
     this.shoufle();
   },
-
   shoufle: function(){
     for(var i=this.cards.length-1;i>0;i--){
       var r=Math.floor(Math.random()*(i+1));
