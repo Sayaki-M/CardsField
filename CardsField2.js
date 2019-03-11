@@ -94,10 +94,7 @@ phina.define('MainScene', {
     this.group=DisplayElement().addChildTo(this);
     this.setButtons();
     this.cardgroup=DisplayElement().addChildTo(this.group);
-    var self=this;
     this.deck=Deck();
-    this.player=Player(self);
-    this.field=Field();
   },
   setButtons:function(){
     //山札をめくるボタン
@@ -108,12 +105,14 @@ phina.define('MainScene', {
     this.getcard.text=Label("山\n札").addChildTo(this.getcard);
     this.getcard.setInteractive(true);
     this.getcard.onpointend=function(){
-      var cnum=self.getCard();
-      var card=Card(PUT_SPACE_F[0],PUT_SPACE_F[1],id=cnum,position="field",front=false).addChildTo(self.cardgroup);
+      var card=Card(PUT_SPACE_F[0],PUT_SPACE_F[1],id=self.getCard(),position="field",front=false).addChildTo(self.cardgroup);
       card.onpointstart=function(){
+        self.cardgroup.children.forEach(function(nya){
+          nya.active=false;
+        });
         card.active=true;
-        self.group.children.forEach(function(nya,i){
-          self.group.children.forEach(function(targ,j){
+        self.cardgroup.children.forEach(function(nya,i){
+          self.cardgroup.children.forEach(function(targ,j){
             if(nya.active&&targ.active&&j<i){
               targ.active=false;
             }
@@ -131,7 +130,6 @@ phina.define('MainScene', {
   //山札から手札に
   getCard:function(){
     var a=this.deck.giveCard();
-    this.player.addCard(a);
     return a;
   },
   //手札を並べる
@@ -139,14 +137,12 @@ phina.define('MainScene', {
     var x= (SCREEN_WIDTH-2*SIDE_PADDING-CARD_WIDTH)/(cards.length-1);
     var y=(SCREEN_HEIGHT-PLAYER_HEIGHT/2);
     for(var i=0;i<cards.length;i++){
-      var cnum=self.getCard();
-      var card=Card(SIDE_PADDING+x*i+CARD_WIDTH/2,y,id=cnum,field="player",front=true).addChildTo(this.group);
+      var card=Card(SIDE_PADDING+x*i+CARD_WIDTH/2,y,id=self.getCard(),field="player",front=true).addChildTo(this.cardgroup);
     }
   },
-  /*showcard: function(x,y,id,){
-
-
-  },*/
+  showcard: function(x,y,id){
+    var card=Card(x,y,id).addChildTo(this.cardgroup);
+  },
   findCard: function(id){
     var res;
     this.group.children.forEach(function(card){
@@ -196,7 +192,6 @@ phina.define('TitleScene',{
     this.secretkey=secretkey;
   },
 });
-
 //RuleSceneクラスを定義
 phina.define('RuleScene',{
   superClass:'BaseScene',
@@ -215,7 +210,6 @@ phina.define('RuleScene',{
     this.rulebar=Rulebar().addChildTo(this.group);
   },
 });
-
 //MakeRoomSceneクラスを定義
 phina.define('MakeRoomScene',{
   superClass:'BaseScene',
@@ -242,7 +236,6 @@ phina.define('MakeRoomScene',{
     this.roomNumber.text="room number:"+num;
   },
 });
-
 //EnterRoomSceneクラスを定義
 phina.define('EnterRoomScene',{
   superClass:'BaseScene',
@@ -303,12 +296,13 @@ phina.define('Card',{
   superClass:'Rectangle',
   //初期化
   init: function(x,y,id,field="field",front=false){
-    this.superInit({x:x,y:y});
+    this.superInit();
     this.group=DisplayElement().addChildTo(this);
     this.active=false;
     this.id=id;
     this.x=x,
     this.y=y,
+    this.dl=0,
     this.group.suit=Label({
       text:CARDS[id].suit,
       y:-CARD_HEIGHT/4,
@@ -346,32 +340,6 @@ phina.define('Card',{
     this.moveTo(PUT_SPACE_P[0],PUT_SPACE_P[1]);
     this.field="player";
   },
-  //クリック開始時の動き
-  onpointstart:function(){
-    this.active=true;
-  },
-  //クリック終了時の動き
-  onpointend:function(){
-    this.active=false;
-    if((Math.abs(this.x-SEND_SPACE_F[0])<SPACE[0]/2)&&(Math.abs(this.y-SEND_SPACE_F[1])<SPACE[1]/2)){
-      this.putonp();
-      this.front=true;
-    }
-    if((Math.abs(this.x-SEND_SPACE_P[0])<SPACE[0]/2)&&(Math.abs(this.y-SEND_SPACE_P[1])<SPACE[1]/2)){
-      this.putonf();
-    }
-    if((Math.abs(this.x-TURN_SPACE_F[0])<SPACE[0]/2)&&(Math.abs(this.y-TURN_SPACE_F[1])<SPACE[1]/2)){
-      this.putonf();
-      this.turn();
-    }
-    if((Math.abs(this.x-TURN_SPACE_P[0])<SPACE[0]/2)&&(Math.abs(this.y-TURN_SPACE_P[1])<SPACE[1]/2)){
-      this.putonp();
-      this.turn();
-    }
-    if((Math.abs(this.x-REMOVE_SPACE_F[0])<SPACE[0]/2)&&(Math.abs(this.y-REMOVE_SPACE_F[1])<SPACE[1]/2)){
-      this.remove();
-    }
-  },
   //クリック中の動き
   onpointmove:function(e){
     if(this.active){
@@ -401,6 +369,32 @@ phina.define('Card',{
 
       }
     }
+    this.dl+=e.pointer.x**e.pointer.x+e.pointer.y**e.pointer.y;
+  },
+  //クリック終了時の動き
+  onpointend:function(){
+    if(this.dl>0){
+      this.dl=0;
+      this.active=false;
+    }
+    if((Math.abs(this.x-SEND_SPACE_F[0])<SPACE[0]/2)&&(Math.abs(this.y-SEND_SPACE_F[1])<SPACE[1]/2)){
+      this.putonp();
+      this.front=true;
+    }
+    if((Math.abs(this.x-SEND_SPACE_P[0])<SPACE[0]/2)&&(Math.abs(this.y-SEND_SPACE_P[1])<SPACE[1]/2)){
+      this.putonf();
+    }
+    if((Math.abs(this.x-TURN_SPACE_F[0])<SPACE[0]/2)&&(Math.abs(this.y-TURN_SPACE_F[1])<SPACE[1]/2)){
+      this.putonf();
+      this.turn();
+    }
+    if((Math.abs(this.x-TURN_SPACE_P[0])<SPACE[0]/2)&&(Math.abs(this.y-TURN_SPACE_P[1])<SPACE[1]/2)){
+      this.putonp();
+      this.turn();
+    }
+    if((Math.abs(this.x-REMOVE_SPACE_F[0])<SPACE[0]/2)&&(Math.abs(this.y-REMOVE_SPACE_F[1])<SPACE[1]/2)){
+      this.remove();
+    }
   },
   //裏返す
   turn:function(){
@@ -428,17 +422,18 @@ phina.define("CardHolder",{
   init:function(){
     this.cards=[];
   },
-  addCard:function(num){
-    this.cards.push(num);
+  addCard:function(id){
+    this.cards.push(id);
   },
   giveCard:function(){
     var a=this.cards[0];
     this.cards.splice(0,1);
     return a;
   },
-  /*remove:function(num){
+
+  /*remove:function(id){
     this.cards=this.cards.filter(funtion(card){
-      return card!==num;
+      return card!==id;
     });
   },*/
 
@@ -462,21 +457,6 @@ phina.define("Deck",{
     }
   },
 
-});
-//手札クラス
-phina.define("Player",{
-  superClass:"CardHolder",
-  init: function(name="nanasie"){
-    this.superInit();
-    this.name=name;
-  },
-});
-//場札クラス
-phina.define("Field",{
-  superClass:"CardHolder",
-  init: function(){
-    this.superInit();
-  },
 });
 //ルールクラス
 phina.define('Rulebar',{
