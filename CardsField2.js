@@ -60,7 +60,7 @@ var CARDS={
   49: {suit:"ク", num: "J"},
   50: {suit:"ク", num: "Q"},
   51: {suit:"ク", num: "K"},
-}
+};
 var SCREEN_WIDTH=640;
 var SCREEN_HEIGHT=960;
 var OPPONENT_HEIGHT=120;
@@ -105,23 +105,10 @@ phina.define('MainScene', {
     this.getcard.text=Label("山\n札").addChildTo(this.getcard);
     this.getcard.setInteractive(true);
     this.getcard.onpointend=function(){
-      var card=Card(PUT_SPACE_F[0],PUT_SPACE_F[1],id=self.getCard(),position="field",front=false).addChildTo(self.cardgroup);
-      card.onpointstart=function(){
-        self.cardgroup.children.forEach(function(nya){
-          nya.active=false;
-        });
-        card.active=true;
-        self.cardgroup.children.forEach(function(nya,i){
-          self.cardgroup.children.forEach(function(targ,j){
-            if(nya.active&&targ.active&&j<i){
-              targ.active=false;
-            }
-          });
-        });
-      };
+      self.showCard(PUT_SPACE_F[0],PUT_SPACE_F[1],id=self.getCard());
     };
     this.getcard.update=function(){
-      if (self.deck.cards[0]==null){
+      if (self.deck.cards[0]===null){
         self.getcard.remove();
       }
     };
@@ -129,8 +116,8 @@ phina.define('MainScene', {
   },
   //山札から手札に
   getCard:function(){
-    var a=this.deck.giveCard();
-    return a;
+    var id=this.deck.giveCard(); //サーバーからidをもらう予定
+    return id;
   },
   //手札を並べる
   prepare: function(cards){
@@ -140,15 +127,53 @@ phina.define('MainScene', {
       var card=Card(SIDE_PADDING+x*i+CARD_WIDTH/2,y,id=self.getCard(),field="player",front=true).addChildTo(this.cardgroup);
     }
   },
-  showcard: function(x,y,id){
+  //カードを表示する
+  showCard: function(x,y,id){
+    var self=this;
     var card=Card(x,y,id).addChildTo(this.cardgroup);
+    card.onpointstart=function(){
+      self.cardgroup.children.forEach(function(nya){
+        nya.active=false;
+      });
+      card.active=true;
+      self.cardgroup.children.forEach(function(nya,i){
+        self.cardgroup.children.forEach(function(targ,j){
+          if(nya.active&&targ.active&&j<i){
+            targ.active=false;
+          }
+        });
+      });
+    };
+    return card;
   },
+  //目的のカードを探す
   findCard: function(id){
-    var res;
+    var targ;
+    var find=false;
+    var self=this;
     this.group.children.forEach(function(card){
-      if(card.id=id){res=card;}
+      if(card.id=id){
+        targ=card;
+        find=true;
+      }
     });
-    return res;
+    if(find){
+      return targ;
+    }else{
+      card=self.showCard(x=self.gridX.center(),y=self.gridY.center(),id=id);
+      return card;
+    }
+  },
+  //カードを動かす
+  moveCard: function(x,y,id){
+    var targ=this.findCard(id);
+    targ.x=x;
+    targ.y=y;
+  },
+  //カードを消去する
+  deleteCard: function(id){
+    var targ=this.findCard(id);
+    targ.remove();
   },
 });
 
@@ -312,8 +337,10 @@ phina.define('Card',{
       y:CARD_HEIGHT/4,
     }).addChildTo(this.group);
     this.setInteractive(true);
-    this.field=position;
-    this.front=front;  //表：true
+    this.field=field;
+    this.front=false;  //表：true
+    this.fill=GRAD;
+    this.group.hide();
   },
 
   update: function(){
@@ -323,13 +350,6 @@ phina.define('Card',{
     }else{
       this.stroke='purple';
       this.strokeWidth=4;
-    }
-    if(this.front){
-      this.fill='white';
-      this.group.show();
-    }else{
-      this.fill=GRAD;
-      this.group.hide();
     }
   },
   putonf:function(){
@@ -369,7 +389,7 @@ phina.define('Card',{
 
       }
     }
-    this.dl+=e.pointer.x**e.pointer.x+e.pointer.y**e.pointer.y;
+    this.dl+=e.pointer.x*e.pointer.x+e.pointer.y*e.pointer.y;
   },
   //クリック終了時の動き
   onpointend:function(){
@@ -398,6 +418,13 @@ phina.define('Card',{
   },
   //裏返す
   turn:function(){
+    if(this.front){
+      this.fill=GRAD;
+      this.group.hide();
+    }else{
+      this.group.show();
+      this.fill='white';
+    }
     this.front=!(this.front);
   }
 });
@@ -476,7 +503,7 @@ phina.define('Rulebar',{
     this.value=Label({text:this.values[this.valnum],x:100}).addChildTo(this.group);
     this.smaller=TriangleShape({x:50,y:0,radius:30,rotation:30,}).addChildTo(this.group);
     this.smaller.setInteractive(true);
-    self=this;
+    var self=this;
     this.smaller.onpointstart=function(){
       if(self.valnum>=1){
         self.valnum-=1;
