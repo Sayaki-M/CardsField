@@ -3,8 +3,8 @@ phina.globalize();
 //定数
 var ASSETS={
   image:{
-    gara: "gara.png",
-    logo: "logo.png",
+    gara: "/static/gara.png",
+    logo: "/static/logo.png",
   },
 }
 var CARDS={

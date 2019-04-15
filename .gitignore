@@ -3,3 +3,5 @@
 *.pptx
 *.jpg
 *.docx
+
+.DS_Store
