@@ -68,6 +68,29 @@ var FIELD_HEIGHT=SCREEN_WIDTH; //=640
 var PLAYER_HEIGHT=SCREEN_HEIGHT-OPPONENT_HEIGHT-FIELD_HEIGHT;//=200
 var CARD_WIDTH=56;
 var CARD_HEIGHT=84;
+var PIECESIZE=100;
+var XLEFT=200;
+var XCENTER=SCREEN_WIDTH/2;
+var XRIGHT=440;
+var YTOP=300;
+var YMTOP=420;
+var YMBOTTOM=540;
+var YBOTTOM=660;
+var KETA=6;
+var PIECEPLACE={
+  1: {x:XLEFT,y:YTOP},
+  2: {x:XCENTER,y:YTOP},
+  3: {x:XRIGHT,y:YTOP},
+  4: {x:XLEFT,y:YMTOP},
+  5: {x:XCENTER,y:YMTOP},
+  6: {x:XRIGHT,y:YMTOP},
+  7: {x:XLEFT,y:YMBOTTOM},
+  8: {x:XCENTER,y:YMBOTTOM},
+  9: {x:XRIGHT,y:YMBOTTOM},
+  C: {x:XLEFT,y:YBOTTOM},
+  0: {x:XCENTER,y:YBOTTOM},
+  AC: {x:XRIGHT,y:YBOTTOM},
+};
 var GRAD=Canvas.createLinearGradient(CARD_WIDTH/2,-CARD_HEIGHT/2,-CARD_WIDTH/2,CARD_HEIGHT/2);
 GRAD.addColorStop(0,'green');
 GRAD.addColorStop(0.5,'yellowgreen');
@@ -201,37 +224,102 @@ phina.define('EnterRoomScene',{
     this.superInit(param.secretkey);
     this.group=DisplayElement().addChildTo(this);
     this.backgroundColor='pink';
-    var input = document.querySelector('#input');
-    input.oninput = function() {
-      enterNumber.text.text = input.value;
-      enterNumber.text.fontSize=60;
-    };
-
-    var enterNumber = RectangleShape({
-      x:this.gridX.center(),
-      y:this.gridY.center()*4/3,
-      height:60,
-      width:240,
-      stroke:'gray',
-      strokeWidth:1,
-      fill:'yellow',
-    }).addChildTo(this.group);
-    enterNumber.text=Label({
-      text:'put your\nroom number',
-      fontSize:24,
-    }).addChildTo(enterNumber);
-    enterNumber.setInteractive(true);
-    enterNumber.onpointstart = function() {
-      input.focus();
-    };
-    var goButton=GoButton().addChildTo(this.group);
+    // ラベルを生成
+    this.label = Label({
+      text:Array(KETA+1).join('-'),
+      x:XCENTER,
+      y:180,
+      fontSize:80,
+    }).addChildTo(this);
+    for(var i=0;i<=9;i++){
+      this.createNumButton(i);
+    }
+    this.createCButton();
+    this.entering="";
+    this.goButton=GoButton().addChildTo(this.group);
     var self=this;
-    goButton.onpointend=function(){
+    this.goButton.onpointend=function(){
       self.exit({
         nextLabel:'MainScene',
         secretkey: this.secretkey,
       });
     };
+  },
+  createNumButton: function(i){
+    var self=this;
+    var num=NumberButton({x:PIECEPLACE[i].x,y:PIECEPLACE[i].y,text:i+""}).addChildTo(this.group);
+    num.onpointend=function(){
+      self.enteringSpace(num.text);
+    };
+  },
+  createCButton: function(){
+    var self=this;
+    this.clearButton=NumberButton({x:PIECEPLACE.C.x,y:PIECEPLACE.C.y,text:"C"}).addChildTo(this.group);
+    this.clearButton.onpointend=function(){
+      if(self.entering.length>=1){
+        self.entering=self.entering.slice(0,self.entering.length-1);
+        self.setText();
+      }
+    };
+    this.clearAllButton=NumberButton({x:PIECEPLACE.AC.x,y:PIECEPLACE.AC.y,text:"AC"}).addChildTo(this.group);
+    this.clearAllButton.onpointend=function(){
+      self.ClearAll();
+    };
+  },
+  enteringSpace: function(text){
+    if(this.entering.length<KETA-1){
+      this.entering+=text;
+    }else{
+      this.entering=this.entering.slice(0,KETA-1)+text;
+    }
+    this.setText();
+  },
+  setText: function(){
+    this.label.text=(this.entering+Array(KETA+1).join("-")).slice(0,KETA);
+    if(this.entering.length==KETA){
+      this.goButton.activate();
+      this.goButton.fill='blue';
+    }else{
+      this.goButton.inactivate();
+    }
+  },
+  ClearAll: function(){
+    this.entering="";
+    this.setText();
+  },
+});
+phina.define("NumberButton",{
+  superClass: 'Button',
+  init:function(options){
+    options=(options||{}).$safe({
+      width: PIECESIZE,
+      height: PIECESIZE,
+      fill:'green',
+    });
+    this.superInit(options);
+    this.setInteractive(true);
+  },
+});
+//goボタンクラス
+phina.define('GoButton',{
+  superClass:'Button',
+  init: function(){
+    this.superInit({
+      x: SCREEN_WIDTH/2,
+      y: SCREEN_HEIGHT*5/6,
+      text: "Go",
+      fill: 'gray',
+      fontColor: 'white',
+    });
+    this.setInteractive(false);
+  },
+  inactivate:function(){
+    this.setInteractive(false);
+    this.fill='gray';
+  },
+  activate:function(){
+    this.setInteractive(true);
+    this.fill='blue';
   },
 });
 //Sceneの基本デザインを定義
@@ -362,20 +450,6 @@ phina.define("Deck",{
     var a=this.cards[0];
     this.cards.splice(0,1);
     return a;
-  },
-
-});
-//goボタンクラス
-phina.define('GoButton',{
-  superClass:'Button',
-  init: function(){
-    this.superInit({
-      x: SCREEN_WIDTH/2,
-      y: SCREEN_HEIGHT*3/4,
-      text: "Go",
-      fill: 'blue',
-      fontColor: 'white',
-    });
   },
 });
 // メイン処理
