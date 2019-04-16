@@ -194,7 +194,7 @@ phina.define('TitleScene',{
     var self=this;
     makeRoomButton.onpointend=function(){
       self.exit({
-        nextLabel:'RuleScene',
+        nextLabel:'MainScene',
         secretkey: this.secretkey,
       });
     };
@@ -215,50 +215,6 @@ phina.define('TitleScene',{
   },
   setSecretKey: function(secretkey){
     this.secretkey=secretkey;
-  },
-});
-//RuleSceneクラスを定義
-phina.define('RuleScene',{
-  superClass:'BaseScene',
-  init:function(param){
-    this.superInit(param.secretkey);
-    this.group=DisplayElement().addChildTo(this);
-    this.backgroundColor='yellowgreen';
-    this.goButton=GoButton().addChildTo(this.group);
-    var self=this;
-    this.goButton.onpointstart=function(){
-      self.exit({
-        nextLabel:'MakeRoomScene',
-        secretkey: this.secretkey,
-      });
-    };
-    this.rulebar=Rulebar().addChildTo(this.group);
-  },
-});
-//MakeRoomSceneクラスを定義
-phina.define('MakeRoomScene',{
-  superClass:'BaseScene',
-  init:function(param){
-    this.superInit(param.secretkey);
-    this.group=DisplayElement().addChildTo(this);
-    this.backgroundColor='lime';
-    this.roomNumber=Label({
-      text:"12345",
-      x:this.gridX.center(),
-      y:this.gridY.center()*4/3,
-    }).addChildTo(this.group);
-    var goButton=GoButton().addChildTo(this.group);
-    var self=this;
-    goButton.onpointend=function(){
-      self.exit({
-        nextLabel:'MainScene',
-        secretkey: this.secretkey,
-      });
-    };
-    this.setLabel("12345");
-  },
-  setLabel:function(num){
-    this.roomNumber.text="room number:"+num;
   },
 });
 //EnterRoomSceneクラスを定義
@@ -444,32 +400,10 @@ phina.define('Rectangle',{
       });
     },
 });
-//カード保持者クラス
-phina.define("CardHolder",{
-  init:function(){
-    this.cards=[];
-  },
-  addCard:function(id){
-    this.cards.push(id);
-  },
-  giveCard:function(){
-    var a=this.cards[0];
-    this.cards.splice(0,1);
-    return a;
-  },
-
-  /*remove:function(id){
-    this.cards=this.cards.filter(funtion(card){
-      return card!==id;
-    });
-  },*/
-
-});
 //山札クラス
 phina.define("Deck",{
-  superClass:"CardHolder",
   init: function(joker=0){
-    this.superInit();
+    this.cards=[];
     for(var i=0;i<(52+joker);i++){
       this.cards[i]=i;
     }
@@ -483,41 +417,13 @@ phina.define("Deck",{
       this.cards[r]=tmp;
     }
   },
-
-});
-//ルールクラス
-phina.define('Rulebar',{
-  superClass:'RectangleShape',
-  init:function(label="member",values=["nya","wan","kon"],y=100){
-    this.superInit({
-      width: 400,
-      height: 80,
-      fill:"white",
-      x:SCREEN_WIDTH/2,
-      y:y,
-    });
-    this.valnum=0;
-    this.group=DisplayElement().addChildTo(this);
-    this.label=Label({text:label,x:-100}).addChildTo(this.group);
-    this.values=values;
-    this.value=Label({text:this.values[this.valnum],x:100}).addChildTo(this.group);
-    this.smaller=TriangleShape({x:50,y:0,radius:30,rotation:30,}).addChildTo(this.group);
-    this.smaller.setInteractive(true);
-    var self=this;
-    this.smaller.onpointstart=function(){
-      if(self.valnum>=1){
-        self.valnum-=1;
-        self.value.text=self.values[self.valnum];
-      }
-    };
-    this.larger=TriangleShape({x:150,y:0,radius:30,rotation:-30}).addChildTo(this.group);
-    this.larger.setInteractive(true);
-    this.larger.onpointstart=function(){
-      if(self.valnum<=self.values.length-2){
-        self.valnum+=1;
-        self.value.text=self.values[self.valnum];
-      }
-    };
+  addCard:function(id){
+    this.cards.push(id);
+  },
+  giveCard:function(){
+    var a=this.cards[0];
+    this.cards.splice(0,1);
+    return a;
   },
 
 });
@@ -544,17 +450,6 @@ phina.main(function() {
       {
         className: 'TitleScene',
         label: 'TitleScene',
-      },
-
-      {
-        className: 'RuleScene',
-        label: 'RuleScene',
-        nextLabel: 'MakeRoomScene',
-      },
-      {
-        className: 'MakeRoomScene',
-        label: 'MakeRoomScene',
-        nextLabel: 'MainScene',
       },
       {
         className: 'EnterRoomScene',
