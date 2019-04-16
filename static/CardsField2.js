@@ -89,21 +89,20 @@ phina.define('MainScene', {
   },
   setButtons:function(){
     //山札をめくるボタン
-    var x=PUT_SPACE_F[0]+SPACE[0]/2+CARD_WIDTH/2+5;
-    var y=PUT_SPACE_F[1];
+    var x=this.gridX.center();
+    var y=this.gridY.center();
     var self=this;
     this.getcard=Rectangle(x=x,y=y).addChildTo(this.group);
     this.getcard.text=Label("山\n札").addChildTo(this.getcard);
     this.getcard.setInteractive(true);
     this.getcard.onpointend=function(){
-      self.showCard(PUT_SPACE_F[0],PUT_SPACE_F[1],id=self.getCard());
+      self.showCard(x,y+100,id=self.deck.giveCard());
     };
     this.getcard.update=function(){
       if (self.deck.cards[0]===null){
         self.getcard.remove();
       }
     };
-
   },
   //カードを表示する
   showCard: function(x,y,id){
