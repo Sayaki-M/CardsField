@@ -64,20 +64,11 @@ var CARDS={
 var SCREEN_WIDTH=640;
 var SCREEN_HEIGHT=960;
 var OPPONENT_HEIGHT=120;
-var FIELD_HEIGHT=640;
+var FIELD_HEIGHT=SCREEN_WIDTH; //=640
 var PLAYER_HEIGHT=SCREEN_HEIGHT-OPPONENT_HEIGHT-FIELD_HEIGHT;//=200
-var SIDE_PADDING=110;
 var CARD_WIDTH=56;
 var CARD_HEIGHT=84;
 var GRAD=Canvas.createLinearGradient(CARD_WIDTH/2,-CARD_HEIGHT/2,-CARD_WIDTH/2,CARD_HEIGHT/2);
-var SPACE=[100,100];
-var PUT_SPACE_F=[SPACE[0]/2,OPPONENT_HEIGHT+FIELD_HEIGHT-SPACE[1]/2];
-var PUT_SPACE_P=[SCREEN_WIDTH-SPACE[0]/2,OPPONENT_HEIGHT+FIELD_HEIGHT+SPACE[1]/2];
-var SEND_SPACE_F=[SCREEN_WIDTH-SPACE[0]/2,OPPONENT_HEIGHT+FIELD_HEIGHT-SPACE[1]/2];
-var SEND_SPACE_P=[SPACE[0]/2,OPPONENT_HEIGHT+FIELD_HEIGHT+SPACE[1]/2];
-var TURN_SPACE_F=[SPACE[0]/2,OPPONENT_HEIGHT+SPACE[1]/2];
-var TURN_SPACE_P=[SPACE[0]/2,SCREEN_HEIGHT-SPACE[1]/2];
-var REMOVE_SPACE_F=[SCREEN_WIDTH-SPACE[0]/2,OPPONENT_HEIGHT+SPACE[1]/2];
 GRAD.addColorStop(0,'green');
 GRAD.addColorStop(0.5,'yellowgreen');
 GRAD.addColorStop(1,'green');
@@ -113,19 +104,6 @@ phina.define('MainScene', {
       }
     };
 
-  },
-  //山札から手札に
-  getCard:function(){
-    var id=this.deck.giveCard(); //サーバーからidをもらう予定
-    return id;
-  },
-  //手札を並べる
-  prepare: function(cards){
-    var x= (SCREEN_WIDTH-2*SIDE_PADDING-CARD_WIDTH)/(cards.length-1);
-    var y=(SCREEN_HEIGHT-PLAYER_HEIGHT/2);
-    for(var i=0;i<cards.length;i++){
-      var card=Card(SIDE_PADDING+x*i+CARD_WIDTH/2,y,id=self.getCard(),field="player",front=true).addChildTo(this.cardgroup);
-    }
   },
   //カードを表示する
   showCard: function(x,y,id){
@@ -276,7 +254,7 @@ phina.define('Card',{
   //クラス継承
   superClass:'Rectangle',
   //初期化
-  init: function(x,y,id,field="field",front=false){
+  init: function(x,y,id,front=false){
     this.superInit();
     this.group=DisplayElement().addChildTo(this);
     this.active=false;
@@ -293,12 +271,10 @@ phina.define('Card',{
       y:CARD_HEIGHT/4,
     }).addChildTo(this.group);
     this.setInteractive(true);
-    this.field=field;
     this.front=false;  //表：true
     this.fill=GRAD;
     this.group.hide();
   },
-
   update: function(){
     if(this.active){
       this.stroke='red';
@@ -307,14 +283,6 @@ phina.define('Card',{
       this.stroke='purple';
       this.strokeWidth=4;
     }
-  },
-  putonf:function(){
-    this.moveTo(PUT_SPACE_F[0],PUT_SPACE_F[1]);
-    this.field="field";
-  },
-  putonp:function(){
-    this.moveTo(PUT_SPACE_P[0],PUT_SPACE_P[1]);
-    this.field="player";
   },
   //クリック中の動き
   onpointmove:function(e){
@@ -326,23 +294,12 @@ phina.define('Card',{
       }else{
         this.x=e.pointer.x;
       }
-      if(this.field=="player"){
-        if(e.pointer.y<OPPONENT_HEIGHT+FIELD_HEIGHT+CARD_HEIGHT/2){
-          this.y=OPPONENT_HEIGHT+FIELD_HEIGHT+CARD_HEIGHT/2;
-        }else if(e.pointer.y>SCREEN_HEIGHT-CARD_HEIGHT/2){
-          this.y=SCREEN_HEIGHT-CARD_HEIGHT/2;
-        }else{
-          this.y=e.pointer.y;
-        }
-      }else if(this.field=="field"){
-        if(e.pointer.y<OPPONENT_HEIGHT+CARD_HEIGHT/2){
-          this.y=OPPONENT_HEIGHT+CARD_HEIGHT/2;
-        }else if(e.pointer.y>OPPONENT_HEIGHT+FIELD_HEIGHT-CARD_HEIGHT/2){
-          this.y=OPPONENT_HEIGHT+FIELD_HEIGHT-CARD_HEIGHT/2;
-        }else{
-          this.y=e.pointer.y
-        }
-
+      if(e.pointer.y<OPPONENT_HEIGHT+CARD_HEIGHT/2){
+        this.y=OPPONENT_HEIGHT+CARD_HEIGHT/2;
+      }else if(e.pointer.y>SCREEN_HEIGHT-CARD_HEIGHT/2){
+        this.y=SCREEN_HEIGHT-CARD_HEIGHT/2;
+      }else{
+        this.y=e.pointer.y;
       }
     }
     this.dl+=e.pointer.x*e.pointer.x+e.pointer.y*e.pointer.y;
@@ -352,24 +309,6 @@ phina.define('Card',{
     if(this.dl>0){
       this.dl=0;
       this.active=false;
-    }
-    if((Math.abs(this.x-SEND_SPACE_F[0])<SPACE[0]/2)&&(Math.abs(this.y-SEND_SPACE_F[1])<SPACE[1]/2)){
-      this.putonp();
-      this.front=true;
-    }
-    if((Math.abs(this.x-SEND_SPACE_P[0])<SPACE[0]/2)&&(Math.abs(this.y-SEND_SPACE_P[1])<SPACE[1]/2)){
-      this.putonf();
-    }
-    if((Math.abs(this.x-TURN_SPACE_F[0])<SPACE[0]/2)&&(Math.abs(this.y-TURN_SPACE_F[1])<SPACE[1]/2)){
-      this.putonf();
-      this.turn();
-    }
-    if((Math.abs(this.x-TURN_SPACE_P[0])<SPACE[0]/2)&&(Math.abs(this.y-TURN_SPACE_P[1])<SPACE[1]/2)){
-      this.putonp();
-      this.turn();
-    }
-    if((Math.abs(this.x-REMOVE_SPACE_F[0])<SPACE[0]/2)&&(Math.abs(this.y-REMOVE_SPACE_F[1])<SPACE[1]/2)){
-      this.remove();
     }
   },
   //裏返す
