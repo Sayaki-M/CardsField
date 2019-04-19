@@ -76,7 +76,7 @@ var YTOP=300;
 var YMTOP=420;
 var YMBOTTOM=540;
 var YBOTTOM=660;
-var KETA=6;
+var KETA=5;
 var PIECEPLACE={
   1: {x:XLEFT,y:YTOP},
   2: {x:XCENTER,y:YTOP},
@@ -91,6 +91,10 @@ var PIECEPLACE={
   0: {x:XCENTER,y:YBOTTOM},
   AC: {x:XRIGHT,y:YBOTTOM},
 };
+namespace = '/test';
+
+var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port + namespace);
+
 var GRAD=Canvas.createLinearGradient(CARD_WIDTH/2,-CARD_HEIGHT/2,-CARD_WIDTH/2,CARD_HEIGHT/2);
 GRAD.addColorStop(0,'green');
 GRAD.addColorStop(0.5,'yellowgreen');
@@ -102,13 +106,35 @@ phina.define('MainScene', {
   init: function() {
     this.superInit();
     // 背景色を指定
-    this.backgroundColor = 'yellow';
-    this.bg=Sprite("gara").addChildTo(this);
-    this.bg.origin.set(0,0);
+    this.backgroundColor = '#05fff2';
     this.group=DisplayElement().addChildTo(this);
     this.setButtons();
+    var playerBG=RectangleShape({
+      x:this.gridX.center(),
+      y:SCREEN_HEIGHT-PLAYER_HEIGHT/2,
+      fill:'green',
+      width: SCREEN_WIDTH,
+      height: PLAYER_HEIGHT,
+      strokeWidth:0,
+    }).addChildTo(this.group)
     this.cardgroup=DisplayElement().addChildTo(this.group);
+    var numBG=RectangleShape({
+      x:this.gridX.center(),
+      y:OPPONENT_HEIGHT/2,
+      fill:'yellow',
+      width: SCREEN_WIDTH,
+      height: OPPONENT_HEIGHT,
+      strokeWidth:0,
+    }).addChildTo(this.group);
+    this.roomNum=Label({
+      x:200,
+      y:OPPONENT_HEIGHT/2,
+      text:"room number : 00000"
+    }).addChildTo(this.group);
     this.deck=Deck();
+    socket.on('my_response', function(msg) {
+        console.log("nya");
+    });
   },
   setButtons:function(){
     //山札をめくるボタン
@@ -120,6 +146,8 @@ phina.define('MainScene', {
     this.getcard.setInteractive(true);
     this.getcard.onpointend=function(){
       self.showCard(x,y+100,id=self.deck.giveCard());
+      socket.emit('my_broadcast_event', {data: "nya"});
+
     };
     this.getcard.update=function(){
       if (self.deck.cards[0]===null){
@@ -127,6 +155,7 @@ phina.define('MainScene', {
       }
     };
   },
+
   //カードを表示する
   showCard: function(x,y,id){
     var self=this;
@@ -287,7 +316,14 @@ phina.define('EnterRoomScene',{
     this.entering="";
     this.setText();
   },
+  sendCardData: function(card){
+    x=card.x;
+    y=card.y;
+    front=card.front;
+    id=card.id;
+  }
 });
+//番号ボタンクラス
 phina.define("NumberButton",{
   superClass: 'Button',
   init:function(options){
@@ -358,7 +394,7 @@ phina.define('Card',{
       y:CARD_HEIGHT/4,
     }).addChildTo(this.group);
     this.setInteractive(true);
-    this.front=false;  //表：true
+    this.front=front;  //表：true
     this.fill=GRAD;
     this.group.hide();
   },
