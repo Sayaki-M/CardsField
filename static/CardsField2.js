@@ -132,8 +132,27 @@ phina.define('MainScene', {
       text:"room number : 00000"
     }).addChildTo(this.group);
     this.deck=Deck();
-    socket.on('my_response', function(msg) {
-        console.log("nya");
+  },
+  onpointstart:function(){
+    var self=this;
+    self.cardgroup.children.forEach(function(nya,i){
+      self.cardgroup.children.forEach(function(targ,j){
+        if(nya.selected&&targ.selected&&j<i){
+          targ.selected=false;
+        }
+      });
+    });
+    self.cardgroup.children.forEach(function(nya,i){
+      if(nya.selected){
+        if(nya.active){
+          nya.turn();
+          nya.active=false;
+        }else{
+          nya.active=true;
+        }
+      }else{
+        nya.active=false;
+      }
     });
   },
   setButtons:function(){
@@ -147,7 +166,6 @@ phina.define('MainScene', {
     this.getcard.onpointend=function(){
       self.showCard(x,y+100,id=self.deck.giveCard());
       socket.emit('my_broadcast_event', {data: "nya"});
-
     };
     this.getcard.update=function(){
       if (self.deck.cards[0]===null){
@@ -160,19 +178,6 @@ phina.define('MainScene', {
   showCard: function(x,y,id){
     var self=this;
     var card=Card(x,y,id).addChildTo(this.cardgroup);
-    card.onpointstart=function(){
-      self.cardgroup.children.forEach(function(nya){
-        nya.active=false;
-      });
-      card.active=true;
-      self.cardgroup.children.forEach(function(nya,i){
-        self.cardgroup.children.forEach(function(targ,j){
-          if(nya.active&&targ.active&&j<i){
-            targ.active=false;
-          }
-        });
-      });
-    };
     return card;
   },
   //目的のカードを探す
@@ -381,6 +386,7 @@ phina.define('Card',{
     this.superInit();
     this.group=DisplayElement().addChildTo(this);
     this.active=false;
+    this.selected=false;
     this.id=id;
     this.x=x,
     this.y=y,
@@ -408,6 +414,9 @@ phina.define('Card',{
     }
   },
   //クリック中の動き
+  onpointstart:function(){
+    this.selected=true;
+  },
   onpointmove:function(e){
     if(this.active){
       if(e.pointer.x<CARD_WIDTH/2){
@@ -433,18 +442,27 @@ phina.define('Card',{
       this.dl=0;
       this.active=false;
     }
+    this.selected=false;
   },
-  //裏返す
+  turntofront:function(){
+    this.front=true;
+    this.group.show();
+    this.fill='white';
+  },
+  turntoback:function(){
+    this.front=false;
+    this.group.hide();
+    this.fill=GRAD;
+  },
+  //反転させる
   turn:function(){
     if(this.front){
-      this.fill=GRAD;
-      this.group.hide();
+      this.turntoback();
     }else{
-      this.group.show();
-      this.fill='white';
+      this.turntofront();
     }
-    this.front=!(this.front);
-  }
+  },
+
 });
 //カードクラスのもととなる長方形クラス
 phina.define('Rectangle',{
