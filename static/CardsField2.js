@@ -3,7 +3,6 @@ phina.globalize();
 //定数
 var ASSETS={
   image:{
-    gara: "/static/gara.png",
     logo: "/static/logo.png",
   },
 }
@@ -69,13 +68,15 @@ var PLAYER_HEIGHT=SCREEN_HEIGHT-OPPONENT_HEIGHT-FIELD_HEIGHT;//=200
 var CARD_WIDTH=56;
 var CARD_HEIGHT=84;
 var PIECESIZE=100;
-var XLEFT=200;
+var XSPACE=120;
+var YSPACE=XSPACE;
 var XCENTER=SCREEN_WIDTH/2;
-var XRIGHT=440;
+var XRIGHT=XCENTER+XSPACE;
+var XLEFT=XCENTER-XSPACE;
 var YTOP=300;
-var YMTOP=420;
-var YMBOTTOM=540;
-var YBOTTOM=660;
+var YMTOP=YTOP+YSPACE;
+var YMBOTTOM=YMTOP+YSPACE;
+var YBOTTOM=YMBOTTOM+YSPACE;
 var KETA=5;
 var PIECEPLACE={
   1: {x:XLEFT,y:YTOP},
@@ -102,12 +103,13 @@ GRAD.addColorStop(1,'green');
 // MainScene クラスを定義
 phina.define('MainScene', {
   superClass: 'DisplayScene',
-  init: function() {
+  init: function(param) {
     this.superInit();
     // 背景色を指定
     this.backgroundColor = '#05fff2';
+    this.secretkey=param.secretkey;
     this.group=DisplayElement().addChildTo(this);
-    this.roomId=00000;
+    this.roomId=param.roomId!==undefined?param.roomId:"00000";
     this.setButtons();
     var playerBG=RectangleShape({
       x:this.gridX.center(),
@@ -127,19 +129,22 @@ phina.define('MainScene', {
       strokeWidth:0,
     }).addChildTo(this.group);
     this.roomNum=Label({
-      x:200,
+      x:180,
       y:OPPONENT_HEIGHT/2,
-      text:"room number : 00000"
+      fontSize:40,
     }).addChildTo(this.group);
+    this.bg=Sprite("logo").addChildTo(this.group);
+    this.bg.x=480;
+    this.bg.y=OPPONENT_HEIGHT/2;
+    this.bg.scaleX-=0.6;
+    this.bg.scaleY-=0.6;
     this.deck=Deck();
     this.setRoomNumber();
     this.receiveCardData();
   },
   setRoomNumber:function(){
-    this.roomId=00000;
-    this.roomNum.text="room number : "+(Array(KETA).join('0')+this.roomId).slice(-KETA);
+    this.roomNum.text="room id:"+(Array(KETA).join('0')+this.roomId).slice(-KETA);
     socket.emit('join',{room: this.roomId});
-    return false;
   },
   onpointstart:function(){
     var self=this;
@@ -173,7 +178,7 @@ phina.define('MainScene', {
     this.getcard.setInteractive(true);
     this.getcard.onpointend=function(){
       card=self.showCard(x,y+100,self.deck.giveCard());
-      //card.sendCardData();
+      card.sendCardData();
     };
     this.getcard.update=function(){
       if (self.deck.cards[0]===null){
@@ -198,11 +203,9 @@ phina.define('MainScene', {
       }
     });
     if(find){
-      find=false;
       return targ;
     }else{
       card=self.showCard(x=self.gridX.center(),y=self.gridY.center(),id=id);
-      find=false;
       return card;
     }
   },
@@ -237,6 +240,11 @@ phina.define('TitleScene',{
   init:function(){
     this.superInit(secretkey="default");
     this.group=DisplayElement().addChildTo(this);
+    this.bg=Sprite("logo").addChildTo(this.group);
+    this.bg.x=this.gridX.center();
+    this.bg.y=this.gridY.center()*5/6;
+    this.bg.scaleX-=0.2;
+    this.bg.scaleY-=0.2;
     this.backgroundColor='lightblue';
     var makeRoomButton=Button({
       x: this.gridX.center()/2,
@@ -280,11 +288,11 @@ phina.define('EnterRoomScene',{
     this.backgroundColor='pink';
     // ラベルを生成
     this.label = Label({
-      text:Array(KETA+1).join('-'),
       x:XCENTER,
-      y:180,
+      y:YTOP-YSPACE,
       fontSize:80,
     }).addChildTo(this);
+
     for(var i=0;i<=9;i++){
       this.createNumButton(i);
     }
@@ -293,11 +301,14 @@ phina.define('EnterRoomScene',{
     this.goButton=GoButton().addChildTo(this.group);
     var self=this;
     this.goButton.onpointend=function(){
+      socket.emit('join',{room:this.entering});
       self.exit({
         nextLabel:'MainScene',
+        roomId:self.entering,
         secretkey: this.secretkey,
       });
     };
+    this.setText();
   },
   createNumButton: function(i){
     var self=this;
@@ -329,7 +340,7 @@ phina.define('EnterRoomScene',{
     this.setText();
   },
   setText: function(){
-    this.label.text=(this.entering+Array(KETA+1).join("-")).slice(0,KETA);
+    this.label.text="id:"+(this.entering+Array(KETA+1).join("-")).slice(0,KETA);
     if(this.entering.length==KETA){
       this.goButton.activate();
       this.goButton.fill='blue';
@@ -350,6 +361,7 @@ phina.define("NumberButton",{
       width: PIECESIZE,
       height: PIECESIZE,
       fill:'green',
+      fontSize: 50,
     });
     this.superInit(options);
     this.setInteractive(true);
@@ -383,11 +395,6 @@ phina.define('BaseScene',{
   init: function(secretkey){
     this.superInit();
     this.group=DisplayElement().addChildTo(this);
-    this.bg=Sprite("logo").addChildTo(this.group);
-    this.bg.x=this.gridX.center();
-    this.bg.y=this.gridY.center()*5/6;
-    this.bg.scaleX-=0.2;
-    this.bg.scaleY-=0.2;
     this.secretkey=secretkey;
   },
 });
@@ -457,6 +464,7 @@ phina.define('Card',{
     if(this.dl>0){
       this.dl=0;
       this.active=false;
+      this.sendCardData();
     }
     this.selected=false;
   },
