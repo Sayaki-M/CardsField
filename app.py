@@ -86,9 +86,15 @@ class MyNamespace(Namespace):
             if thread is None:
                 thread = socketio.start_background_task(background_thread)
         emit('my_response', {'data': 'Connected', 'count': 0})
-
+        
     def on_disconnect(self):
         print('Client disconnected', request.sid)
+        
+    def on_nya(self, message):
+        emit('my_nya',
+             {'x':message['x'],'y':message['y'],'id':message['id'],'front':message['front']},
+             room=message['room'],
+             broadcast=True)
 
 
 socketio.on_namespace(MyNamespace('/test'))

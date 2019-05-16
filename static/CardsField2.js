@@ -92,7 +92,6 @@ var PIECEPLACE={
   AC: {x:XRIGHT,y:YBOTTOM},
 };
 namespace = '/test';
-
 var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port + namespace);
 
 var GRAD=Canvas.createLinearGradient(CARD_WIDTH/2,-CARD_HEIGHT/2,-CARD_WIDTH/2,CARD_HEIGHT/2);
@@ -108,6 +107,7 @@ phina.define('MainScene', {
     // 背景色を指定
     this.backgroundColor = '#05fff2';
     this.group=DisplayElement().addChildTo(this);
+    this.roomId=00000;
     this.setButtons();
     var playerBG=RectangleShape({
       x:this.gridX.center(),
@@ -116,7 +116,7 @@ phina.define('MainScene', {
       width: SCREEN_WIDTH,
       height: PLAYER_HEIGHT,
       strokeWidth:0,
-    }).addChildTo(this.group)
+    }).addChildTo(this.group);
     this.cardgroup=DisplayElement().addChildTo(this.group);
     var numBG=RectangleShape({
       x:this.gridX.center(),
@@ -132,6 +132,14 @@ phina.define('MainScene', {
       text:"room number : 00000"
     }).addChildTo(this.group);
     this.deck=Deck();
+    this.setRoomNumber();
+    this.receiveCardData();
+  },
+  setRoomNumber:function(){
+    this.roomId=00000;
+    this.roomNum.text="room number : "+(Array(KETA).join('0')+this.roomId).slice(-KETA);
+    socket.emit('join',{room: this.roomId});
+    return false;
   },
   onpointstart:function(){
     var self=this;
@@ -164,8 +172,8 @@ phina.define('MainScene', {
     this.getcard.text=Label("山\n札").addChildTo(this.getcard);
     this.getcard.setInteractive(true);
     this.getcard.onpointend=function(){
-      self.showCard(x,y+100,id=self.deck.giveCard());
-      socket.emit('my_broadcast_event', {data: "nya"});
+      card=self.showCard(x,y+100,self.deck.giveCard());
+      //card.sendCardData();
     };
     this.getcard.update=function(){
       if (self.deck.cards[0]===null){
@@ -173,11 +181,9 @@ phina.define('MainScene', {
       }
     };
   },
-
   //カードを表示する
   showCard: function(x,y,id){
-    var self=this;
-    var card=Card(x,y,id).addChildTo(this.cardgroup);
+    var card=Card(x,y,id,this.roomId).addChildTo(this.cardgroup);
     return card;
   },
   //目的のカードを探す
@@ -185,16 +191,18 @@ phina.define('MainScene', {
     var targ;
     var find=false;
     var self=this;
-    this.group.children.forEach(function(card){
-      if(card.id=id){
+    this.cardgroup.children.forEach(function(card){
+      if(card.id==id){
         targ=card;
         find=true;
       }
     });
     if(find){
+      find=false;
       return targ;
     }else{
       card=self.showCard(x=self.gridX.center(),y=self.gridY.center(),id=id);
+      find=false;
       return card;
     }
   },
@@ -205,12 +213,24 @@ phina.define('MainScene', {
     targ.y=y;
   },
   //カードを消去する
-  deleteCard: function(id){
+  /*deleteCard: function(id){
     var targ=this.findCard(id);
     targ.remove();
+  },*/
+  receiveCardData:function(){
+    var self=this;
+    socket.on('my_nya', function(datas){
+      var card=self.findCard(datas.id);
+      card.x=datas.x;
+      card.y=datas.y;
+      if(datas.front){
+        card.turntofront();
+      }else{
+        card.turntoback();
+      }
+    });
   },
 });
-
 //TitleSceneクラスを定義
 phina.define('TitleScene',{
   superClass:'BaseScene',
@@ -321,12 +341,6 @@ phina.define('EnterRoomScene',{
     this.entering="";
     this.setText();
   },
-  sendCardData: function(card){
-    x=card.x;
-    y=card.y;
-    front=card.front;
-    id=card.id;
-  }
 });
 //番号ボタンクラス
 phina.define("NumberButton",{
@@ -382,11 +396,12 @@ phina.define('Card',{
   //クラス継承
   superClass:'Rectangle',
   //初期化
-  init: function(x,y,id,front=false){
+  init: function(x,y,id,roomId){
     this.superInit();
     this.group=DisplayElement().addChildTo(this);
     this.active=false;
     this.selected=false;
+    this.roomId=roomId;
     this.id=id;
     this.x=x,
     this.y=y,
@@ -400,7 +415,7 @@ phina.define('Card',{
       y:CARD_HEIGHT/4,
     }).addChildTo(this.group);
     this.setInteractive(true);
-    this.front=front;  //表：true
+    this.front=false;  //表：true
     this.fill=GRAD;
     this.group.hide();
   },
@@ -435,6 +450,7 @@ phina.define('Card',{
       }
     }
     this.dl+=e.pointer.x*e.pointer.x+e.pointer.y*e.pointer.y;
+    this.sendCardData();
   },
   //クリック終了時の動き
   onpointend:function(){
@@ -461,8 +477,18 @@ phina.define('Card',{
     }else{
       this.turntofront();
     }
+    this.sendCardData();
   },
-
+  sendCardData:function(){
+    socket.emit('nya',{
+      room: this.roomId,
+      id:this.id,
+      x:this.x,
+      y:this.y,
+      front:this.front,
+    });
+    return false;
+  },
 });
 //カードクラスのもととなる長方形クラス
 phina.define('Rectangle',{
