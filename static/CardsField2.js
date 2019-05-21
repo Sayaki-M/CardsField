@@ -62,9 +62,11 @@ var CARDS={
 };
 var SCREEN_WIDTH=640;
 var SCREEN_HEIGHT=960;
-var OPPONENT_HEIGHT=120;
 var FIELD_HEIGHT=SCREEN_WIDTH; //=640
-var PLAYER_HEIGHT=SCREEN_HEIGHT-OPPONENT_HEIGHT-FIELD_HEIGHT;//=200
+var FIELD_CENTER_X=SCREEN_WIDTH/2;
+var FIELD_CENTER_Y=440;
+var OPPONENT_HEIGHT=FIELD_CENTER_Y-FIELD_HEIGHT/2;//=120
+var PLAYER_HEIGHT=SCREEN_HEIGHT-FIELD_CENTER_Y-FIELD_HEIGHT/2;//=200
 var CARD_WIDTH=56;
 var CARD_HEIGHT=84;
 var PIECESIZE=100;
@@ -110,6 +112,7 @@ phina.define('MainScene', {
     this.secretkey=param.secretkey;
     this.group=DisplayElement().addChildTo(this);
     this.roomId=param.roomId!==undefined?param.roomId:"00000";
+    this.player=param.player;  //0:親,1:左,2:対面,3:右
     this.setButtons();
     var playerBG=RectangleShape({
       x:this.gridX.center(),
@@ -171,7 +174,7 @@ phina.define('MainScene', {
   setButtons:function(){
     //山札をめくるボタン
     var x=this.gridX.center();
-    var y=this.gridY.center();
+    var y=FIELD_CENTER_Y;
     var self=this;
     this.getcard=Rectangle(x=x,y=y).addChildTo(this.group);
     this.getcard.text=Label("山\n札").addChildTo(this.getcard);
@@ -188,7 +191,7 @@ phina.define('MainScene', {
   },
   //カードを表示する
   showCard: function(x,y,id){
-    var card=Card(x,y,id,this.roomId).addChildTo(this.cardgroup);
+    var card=Card(x,y,id,this.roomId,this.player).addChildTo(this.cardgroup);
     return card;
   },
   //目的のカードを探す
@@ -224,12 +227,28 @@ phina.define('MainScene', {
     var self=this;
     socket.on('my_nya', function(datas){
       var card=self.findCard(datas.id);
-      card.x=datas.x;
-      card.y=datas.y;
       if(datas.front){
         card.turntofront();
       }else{
         card.turntoback();
+      }
+      switch (self.player) {
+        case 1:
+          card.x=FIELD_CENTER_X+datas.y;
+          card.y=FIELD_CENTER_Y-datas.x;
+          break;
+        case 2:
+          card.x=FIELD_CENTER_X-datas.x;
+          card.y=FIELD_CENTER_Y-datas.y;
+          break;
+        case 3:
+          card.x=FIELD_CENTER_X-datas.y;
+          card.y=FIELD_CENTER_Y+datas.x;
+          break;
+        default:
+          card.x=FIELD_CENTER_X+datas.x;
+          card.y=FIELD_CENTER_Y+datas.y;
+          break;
       }
     });
   },
@@ -258,6 +277,7 @@ phina.define('TitleScene',{
       self.exit({
         nextLabel:'MainScene',
         secretkey: this.secretkey,
+        player:0,
       });
     };
     var enterRoomButton=Button({
@@ -306,6 +326,7 @@ phina.define('EnterRoomScene',{
         nextLabel:'MainScene',
         roomId:self.entering,
         secretkey: this.secretkey,
+        player:3,
       });
     };
     this.setText();
@@ -403,12 +424,13 @@ phina.define('Card',{
   //クラス継承
   superClass:'Rectangle',
   //初期化
-  init: function(x,y,id,roomId){
+  init: function(x,y,id,roomId,player){
     this.superInit();
     this.group=DisplayElement().addChildTo(this);
     this.active=false;
     this.selected=false;
     this.roomId=roomId;
+    this.player=player;
     this.id=id;
     this.x=x,
     this.y=y,
@@ -488,14 +510,46 @@ phina.define('Card',{
     this.sendCardData();
   },
   sendCardData:function(){
-    socket.emit('nya',{
-      room: this.roomId,
-      id:this.id,
-      x:this.x,
-      y:this.y,
-      front:this.front,
-    });
-    return false;
+    var x=this.x-FIELD_CENTER_X;
+    var y=this.y-FIELD_CENTER_Y;
+    switch (this.player) {
+      case 1:
+        socket.emit('nya',{
+          room: this.roomId,
+          id:this.id,
+          x:-y,
+          y:x,
+          front:this.front,
+        });
+        break;
+      case 2:
+        socket.emit('nya',{
+          room: this.roomId,
+          id:this.id,
+          x:-x,
+          y:-y,
+          front:this.front,
+        });
+        break;
+      case 3:
+        socket.emit('nya',{
+          room: this.roomId,
+          id:this.id,
+          x:y,
+          y:-x,
+          front:this.front,
+        });
+        break;
+      default:
+        socket.emit('nya',{
+          room: this.roomId,
+          id:this.id,
+          x:x,
+          y:y,
+          front:this.front,
+        });
+        break;
+    }
   },
 });
 //カードクラスのもととなる長方形クラス
