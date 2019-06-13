@@ -192,7 +192,7 @@ phina.define('MainScene', {
   },
   setDeck:function(){
     var self=this;
-    cards=[...Array(52).keys()];
+    cards=[...Array(54).keys()];
     for(var i=cards.length-1;i>0;i--){
       var r=Math.floor(Math.random()*(i+1));
       var tmp = cards[i];
