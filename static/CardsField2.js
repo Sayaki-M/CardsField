@@ -113,7 +113,6 @@ phina.define('MainScene', {
     this.group=DisplayElement().addChildTo(this);
     this.roomId=param.roomId!==undefined?param.roomId:"00000";
     this.player=param.player;  //0:親,1:左,2:対面,3:右
-    this.setButtons();
     var playerBG=RectangleShape({
       x:this.gridX.center(),
       y:SCREEN_HEIGHT-PLAYER_HEIGHT/2,
@@ -141,18 +140,28 @@ phina.define('MainScene', {
     this.bg.y=OPPONENT_HEIGHT/2;
     this.bg.scaleX-=0.6;
     this.bg.scaleY-=0.6;
-    this.deck=Deck();
     this.setRoomNumber();
     this.receiveCardData();
     if(this.player==0){
       this.sendroomId();
+      this.setDeck();
+      this.sendAllCardData();
+    }else{
+      this.reqAllCardData();
+      this.receiveInitCardData();
     }
   },
-  /*sendAllCardData:function (){
-    this.cardgroup.forEach(function(nya){
-      nya.sendCardData();
+  reqAllCardData:function(){
+    socket.emit('reqcard',{room:this.roomId});
+  },
+  sendAllCardData:function(){
+    var self=this;
+    socket.on('initcard', function(datas){
+      self.cardgroup.children.forEach(function(nya){
+        nya.initCardData();
+      });
     });
-  },*/
+  },
   setRoomNumber:function(){
     this.roomNum.text="room id:"+this.roomId;
     socket.emit('join',{room: this.roomId});
@@ -179,23 +188,19 @@ phina.define('MainScene', {
       }
     });
   },
-  setButtons:function(){
-    //山札をめくるボタン
-    var x=this.gridX.center();
-    var y=FIELD_CENTER_Y;
+  setDeck:function(){
     var self=this;
-    this.getcard=Rectangle(x=x,y=y).addChildTo(this.group);
-    this.getcard.text=Label("山\n札").addChildTo(this.getcard);
-    this.getcard.setInteractive(true);
-    this.getcard.onpointend=function(){
-      card=self.showCard(x,y+100,self.deck.giveCard());
-      card.sendCardData();
-    };
-    this.getcard.update=function(){
-      if (self.deck.cards[0]===null){
-        self.getcard.remove();
-      }
-    };
+    cards=[...Array(52).keys()];
+    for(var i=cards.length-1;i>0;i--){
+      var r=Math.floor(Math.random()*(i+1));
+      var tmp = cards[i];
+      cards[i]=cards[r];
+      cards[r]=tmp;
+    }
+    self.showCard(FIELD_CENTER_X+5,FIELD_CENTER_Y+5,cards[cards.length-1]);
+    for(var i=cards.length-2;i>=0;i--){
+      self.showCard(FIELD_CENTER_X,FIELD_CENTER_Y,cards[i]);
+    }
   },
   //カードを表示する
   showCard: function(x,y,id){
@@ -226,11 +231,35 @@ phina.define('MainScene', {
     targ.x=x;
     targ.y=y;
   },
-  //カードを消去する
-  /*deleteCard: function(id){
-    var targ=this.findCard(id);
-    targ.remove();
-  },*/
+  receiveInitCardData:function(){
+    var self=this;
+    socket.on('initmycard', function(datas){
+      var card=self.showCard(FIELD_CENTER_X,FIELD_CENTER_Y,datas.id);
+      if(datas.front){
+        card.turntofront();
+      }else{
+        card.turntoback();
+      }
+      switch (self.player) {
+        case 1:
+          card.x=FIELD_CENTER_X+datas.y;
+          card.y=FIELD_CENTER_Y-datas.x;
+          break;
+        case 2:
+          card.x=FIELD_CENTER_X-datas.x;
+          card.y=FIELD_CENTER_Y-datas.y;
+          break;
+        case 3:
+          card.x=FIELD_CENTER_X-datas.y;
+          card.y=FIELD_CENTER_Y+datas.x;
+          break;
+        default:
+          card.x=FIELD_CENTER_X+datas.x;
+          card.y=FIELD_CENTER_Y+datas.y;
+          break;
+      }
+    });
+  },
   receiveCardData:function(){
     var self=this;
     socket.on('my_card', function(datas){
@@ -616,6 +645,48 @@ phina.define('Card',{
     }
     this.sendCardData();
   },
+  initCardData:function(){
+    var x=this.x-FIELD_CENTER_X;
+    var y=this.y-FIELD_CENTER_Y;
+    switch (this.player) {
+      case 1:
+        socket.emit('initcard',{
+          room: this.roomId,
+          id:this.id,
+          x:-y,
+          y:x,
+          front:this.front,
+        });
+        break;
+      case 2:
+        socket.emit('initcard',{
+          room: this.roomId,
+          id:this.id,
+          x:-x,
+          y:-y,
+          front:this.front,
+        });
+        break;
+      case 3:
+        socket.emit('initcard',{
+          room: this.roomId,
+          id:this.id,
+          x:y,
+          y:-x,
+          front:this.front,
+        });
+        break;
+      default:
+        socket.emit('initcard',{
+          room: this.roomId,
+          id:this.id,
+          x:x,
+          y:y,
+          front:this.front,
+        });
+        break;
+    }
+  },
   sendCardData:function(){
     var x=this.x-FIELD_CENTER_X;
     var y=this.y-FIELD_CENTER_Y;
@@ -674,32 +745,6 @@ phina.define('Rectangle',{
         y: y,
       });
     },
-});
-//山札クラス
-phina.define("Deck",{
-  init: function(joker=0){
-    this.cards=[];
-    for(var i=0;i<(52+joker);i++){
-      this.cards[i]=i;
-    }
-    this.shoufle();
-  },
-  shoufle: function(){
-    for(var i=this.cards.length-1;i>0;i--){
-      var r=Math.floor(Math.random()*(i+1));
-      var tmp = this.cards[i];
-      this.cards[i]=this.cards[r];
-      this.cards[r]=tmp;
-    }
-  },
-  addCard:function(id){
-    this.cards.push(id);
-  },
-  giveCard:function(){
-    var a=this.cards[0];
-    this.cards.splice(0,1);
-    return a;
-  },
 });
 // メイン処理
 phina.main(function() {
