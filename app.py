@@ -26,7 +26,6 @@ def background_thread():
                       {'data': 'Server generated event', 'count': count},
                       namespace='/test')
 
-
 @app.route('/')
 def index():
     return render_template('index2.html', async_mode=socketio.async_mode)
@@ -50,6 +49,7 @@ class MyNamespace(Namespace):
         emit('my_response',
              {'data': 'In rooms: ' + ', '.join(rooms()),
               'count': session['receive_count']})
+        
 
     def on_leave(self, message):
         leave_room(message['room'])
@@ -67,6 +67,7 @@ class MyNamespace(Namespace):
 
     def on_my_room_event(self, message):
         session['receive_count'] = session.get('receive_count', 0) + 1
+        print(rooms())
         emit('my_response',
              {'data': message['data'], 'count': session['receive_count']},
              room=message['room'])
@@ -90,11 +91,19 @@ class MyNamespace(Namespace):
     def on_disconnect(self):
         print('Client disconnected', request.sid)
         
-    def on_nya(self, message):
-        emit('my_nya',
+    def on_card(self, message):
+        emit('my_card',
              {'x':message['x'],'y':message['y'],'id':message['id'],'front':message['front']},
              room=message['room'],
              broadcast=True)
+        
+    def on_askroomid(self):
+        emit('askroomId',broadcast=True)
+        
+    def on_answerroomid(self,message):
+        emit('roomIds',
+             {'roomId':message['roomId']},
+            broadcast=True)
 
 
 socketio.on_namespace(MyNamespace('/test'))
