@@ -143,14 +143,14 @@ phina.define('MainScene', {
     this.bg.scaleX-=0.6;
     this.bg.scaleY-=0.6;
     this.setRoomNumber();
-    this.receiveCardData();
     if(this.player==0){
       this.sendroomId();
       this.setDeck();
       this.sendAllCardData();
+      this.receiveCardData();
     }else{
       this.reqAllCardData();
-      this.receiveInitCardData();
+      this.receiveAllCardData();
     }
     socket.emit('answerroomid',{roomId:self.roomId});
   },
@@ -160,10 +160,51 @@ phina.define('MainScene', {
   },
   sendAllCardData:function(){
     var self=this;
-    socket.on('initcard', function(datas){
+    socket.on('reqcard', function(){
+      var cards=[];
       self.cardgroup.children.forEach(function(nya){
-        nya.sendCardData();
+        cards.push({
+          room: nya.roomId,
+          id:nya.id,
+          x:nya.x-FIELD_CENTER_X,
+          y:nya.y-FIELD_CENTER_Y,
+          front:this.front,
+        });
       });
+      socket.emit('initcard',{room:self.roomId,cards:cards});
+    });
+  },
+  receiveAllCardData:function(){
+    var self=this;
+    socket.on('initcard', function(datas){
+      datas.cards.forEach(function(nya){
+        var card=self.showCard(FIELD_CENTER_X,FIELD_CENTER_Y,nya.id);
+        if(nya.front){
+          card.turntofront();
+        }else{
+          card.turntoback();
+        }
+        switch (self.player) {
+          case 1:
+            card.x=FIELD_CENTER_X+nya.y;
+            card.y=FIELD_CENTER_Y-nya.x;
+            break;
+          case 2:
+            card.x=FIELD_CENTER_X-nya.x;
+            card.y=FIELD_CENTER_Y-nya.y;
+            break;
+          case 3:
+            card.x=FIELD_CENTER_X-nya.y;
+            card.y=FIELD_CENTER_Y+nya.x;
+            break;
+          default:
+            card.x=FIELD_CENTER_X+nya.x;
+            card.y=FIELD_CENTER_Y+nya.y;
+            break;
+        }
+      });
+      self.receiveCardData();
+      return false;
     });
   },
   setRoomNumber:function(){
@@ -226,7 +267,7 @@ phina.define('MainScene', {
     if(find){
       return targ;
     }else{
-      card=self.showCard(x=self.gridX.center(),y=self.gridY.center(),id=id);
+      card=self.showCard(FIELD_CENTER_X,FIELD_CENTER_Y,id);
       return card;
     }
   },

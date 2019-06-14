@@ -46,9 +46,13 @@ class MyNamespace(Namespace):
             broadcast=True)
     
     def on_reqcard(self,message):
-        emit('initcard',room=message['room'],
+        emit('reqcard',room=message['room'],
              broadcast=True)
         
+    def on_initcard(self,message):
+        emit('initcard',
+             {'cards':message['cards']},
+             room=message['room'])
 
 
 socketio.on_namespace(MyNamespace('/test'))
