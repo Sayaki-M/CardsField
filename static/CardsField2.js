@@ -152,21 +152,24 @@ phina.define('MainScene', {
       this.reqAllCardData();
       this.receiveInitCardData();
     }
+    socket.emit('answerroomid',{roomId:self.roomId});
   },
   reqAllCardData:function(){
     socket.emit('reqcard',{room:this.roomId});
+    return false;
   },
   sendAllCardData:function(){
     var self=this;
     socket.on('initcard', function(datas){
       self.cardgroup.children.forEach(function(nya){
-        nya.initCardData();
+        nya.sendCardData();
       });
     });
   },
   setRoomNumber:function(){
     this.roomNum.text="room id:"+this.roomId;
     socket.emit('join',{room: this.roomId});
+    return false;
   },
   onpointstart:function(){
     var self=this;
@@ -233,35 +236,6 @@ phina.define('MainScene', {
     targ.x=x;
     targ.y=y;
   },
-  receiveInitCardData:function(){
-    var self=this;
-    socket.on('initmycard', function(datas){
-      var card=self.showCard(FIELD_CENTER_X,FIELD_CENTER_Y,datas.id);
-      if(datas.front){
-        card.turntofront();
-      }else{
-        card.turntoback();
-      }
-      switch (self.player) {
-        case 1:
-          card.x=FIELD_CENTER_X+datas.y;
-          card.y=FIELD_CENTER_Y-datas.x;
-          break;
-        case 2:
-          card.x=FIELD_CENTER_X-datas.x;
-          card.y=FIELD_CENTER_Y-datas.y;
-          break;
-        case 3:
-          card.x=FIELD_CENTER_X-datas.y;
-          card.y=FIELD_CENTER_Y+datas.x;
-          break;
-        default:
-          card.x=FIELD_CENTER_X+datas.x;
-          card.y=FIELD_CENTER_Y+datas.y;
-          break;
-      }
-    });
-  },
   receiveCardData:function(){
     var self=this;
     socket.on('my_card', function(datas){
@@ -293,7 +267,6 @@ phina.define('MainScene', {
   },
   sendroomId:function(){
     var self=this;
-    socket.emit('answerroomid',{roomId:self.roomId});
     socket.on('askroomId',function(){
       socket.emit('answerroomid',{roomId:self.roomId});
     });
@@ -350,6 +323,7 @@ phina.define('TitleScene',{
   },
   askroom:function(){
     socket.emit('askroomid');
+    return false;
   },
   existroom: function(){
     var self=this;
@@ -395,7 +369,6 @@ phina.define('EnterRoomScene',{
       if(self.rooms.indexOf(parseInt(self.entering))==-1){
         alert("部屋がないよ");
       }else{
-        socket.emit('join',{room:this.entering});
         self.exit({
           nextLabel:'MainScene',
           roomId:self.entering,
@@ -649,48 +622,6 @@ phina.define('Card',{
     }
     this.sendCardData();
   },
-  initCardData:function(){
-    var x=this.x-FIELD_CENTER_X;
-    var y=this.y-FIELD_CENTER_Y;
-    switch (this.player) {
-      case 1:
-        socket.emit('initcard',{
-          room: this.roomId,
-          id:this.id,
-          x:-y,
-          y:x,
-          front:this.front,
-        });
-        break;
-      case 2:
-        socket.emit('initcard',{
-          room: this.roomId,
-          id:this.id,
-          x:-x,
-          y:-y,
-          front:this.front,
-        });
-        break;
-      case 3:
-        socket.emit('initcard',{
-          room: this.roomId,
-          id:this.id,
-          x:y,
-          y:-x,
-          front:this.front,
-        });
-        break;
-      default:
-        socket.emit('initcard',{
-          room: this.roomId,
-          id:this.id,
-          x:x,
-          y:y,
-          front:this.front,
-        });
-        break;
-    }
-  },
   sendCardData:function(){
     var x=this.x-FIELD_CENTER_X;
     var y=this.y-FIELD_CENTER_Y;
@@ -703,6 +634,7 @@ phina.define('Card',{
           y:x,
           front:this.front,
         });
+        return false;
         break;
       case 2:
         socket.emit('card',{
@@ -712,6 +644,7 @@ phina.define('Card',{
           y:-y,
           front:this.front,
         });
+        return false;
         break;
       case 3:
         socket.emit('card',{
@@ -721,6 +654,7 @@ phina.define('Card',{
           y:-x,
           front:this.front,
         });
+        return false;
         break;
       default:
         socket.emit('card',{
@@ -730,6 +664,7 @@ phina.define('Card',{
           y:y,
           front:this.front,
         });
+        return false;
         break;
     }
   },
