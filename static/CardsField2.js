@@ -81,7 +81,7 @@ var YTOP=240;
 var YMTOP=YTOP+YSPACE;
 var YMBOTTOM=YMTOP+YSPACE;
 var YBOTTOM=YMBOTTOM+YSPACE;
-var KETA=5;
+var KETA=4;
 var PIECEPLACE={
   1: {x:XLEFT,y:YTOP},
   2: {x:XCENTER,y:YTOP},
@@ -113,7 +113,8 @@ phina.define('MainScene', {
     this.backgroundColor = '#05fff2';
     this.secretkey=param.secretkey;
     this.group=DisplayElement().addChildTo(this);
-    this.roomId=param.roomId!==undefined?param.roomId:"00000";
+    this.roomId=param.roomId!==undefined?param.roomId:"0000";
+    this.myId=param.myId;
     this.player=param.player;  //0:親,1:左,2:対面,3:右
     var playerBG=RectangleShape({
       x:this.gridX.center(),
@@ -144,7 +145,6 @@ phina.define('MainScene', {
     this.bg.scaleY-=0.6;
     this.setRoomNumber();
     if(this.player==0){
-      this.sendroomId();
       this.setDeck();
       this.sendAllCardData();
       this.receiveCardData();
@@ -152,7 +152,6 @@ phina.define('MainScene', {
       this.reqAllCardData();
       this.receiveAllCardData();
     }
-    socket.emit('answerroomid',{roomId:self.roomId});
   },
   reqAllCardData:function(){
     socket.emit('reqcard',{room:this.roomId});
@@ -209,8 +208,6 @@ phina.define('MainScene', {
   },
   setRoomNumber:function(){
     this.roomNum.text="room id:"+this.roomId;
-    socket.emit('join',{room: this.roomId});
-    return false;
   },
   onpointstart:function(){
     var self=this;
@@ -250,7 +247,7 @@ phina.define('MainScene', {
   },
   //カードを表示する
   showCard: function(x,y,id){
-    var card=Card(x,y,id,this.roomId,this.player).addChildTo(this.cardgroup);
+    var card=Card(x,y,id,this.roomId,this.player,this.myId).addChildTo(this.cardgroup);
     return card;
   },
   //目的のカードを探す
@@ -280,38 +277,34 @@ phina.define('MainScene', {
   receiveCardData:function(){
     var self=this;
     socket.on('my_card', function(datas){
-      var card=self.findCard(datas.id);
-      if(datas.front){
-        card.turntofront();
-      }else{
-        card.turntoback();
-      }
-      switch (self.player) {
-        case 1:
-          card.x=FIELD_CENTER_X+datas.y;
-          card.y=FIELD_CENTER_Y-datas.x;
-          break;
-        case 2:
-          card.x=FIELD_CENTER_X-datas.x;
-          card.y=FIELD_CENTER_Y-datas.y;
-          break;
-        case 3:
-          card.x=FIELD_CENTER_X-datas.y;
-          card.y=FIELD_CENTER_Y+datas.x;
-          break;
-        default:
-          card.x=FIELD_CENTER_X+datas.x;
-          card.y=FIELD_CENTER_Y+datas.y;
-          break;
+      if(datas.myId!=self.myId){
+        var card=self.findCard(datas.id);
+        if(datas.front){
+          card.turntofront();
+        }else{
+          card.turntoback();
+        }
+        switch (self.player) {
+          case 1:
+            card.x=FIELD_CENTER_X+datas.y;
+            card.y=FIELD_CENTER_Y-datas.x;
+            break;
+          case 2:
+            card.x=FIELD_CENTER_X-datas.x;
+            card.y=FIELD_CENTER_Y-datas.y;
+            break;
+          case 3:
+            card.x=FIELD_CENTER_X-datas.y;
+            card.y=FIELD_CENTER_Y+datas.x;
+            break;
+          default:
+            card.x=FIELD_CENTER_X+datas.x;
+            card.y=FIELD_CENTER_Y+datas.y;
+            break;
+        }
       }
     });
   },
-  sendroomId:function(){
-    var self=this;
-    socket.on('askroomId',function(){
-      socket.emit('answerroomid',{roomId:self.roomId});
-    });
-  }
 });
 //TitleSceneクラスを定義
 phina.define('TitleScene',{
@@ -325,8 +318,7 @@ phina.define('TitleScene',{
     this.bg.scaleX-=0.2;
     this.bg.scaleY-=0.2;
     this.backgroundColor='lightblue';
-    this.rooms=[];
-    this.remrooms=[...Array(10**KETA).keys()];
+    this.myId="nya";
     var makeRoomButton=Button({
       x: this.gridX.center()/2,
       y: this.gridY.center()*3/2,
@@ -336,13 +328,8 @@ phina.define('TitleScene',{
     }).addChildTo(this.group);
     var self=this;
     makeRoomButton.onpointend=function(){
-      roomId=self.remrooms[Math.floor(Math.random() * self.remrooms.length)]
-      self.exit({
-        nextLabel:'MainScene',
-        secretkey: self.secretkey,
-        player:0,
-        roomId:(Array(KETA).join('0') + roomId ).slice( -KETA )
-      });
+      socket.emit('hostjoin');
+      makeRoomButton.setInteractive(false);
     };
     var enterRoomButton=Button({
       x: this.gridX.center()*3/2,
@@ -355,29 +342,33 @@ phina.define('TitleScene',{
       self.exit({
         nextLabel:'EnterRoomScene',
         secretkey: self.secretkey,
-        rooms:self.rooms,
+        myId:self.myId,
       });
     };
     this.setSecretKey("nya");
-    this.askroom();
-    this.existroom();
+    this.joinRoom();
+    this.askmyid();
   },
-  askroom:function(){
-    socket.emit('askroomid');
+  askmyid:function(){
+    var self=this;
+    socket.emit('answermyid');
+    socket.on('myId',function(datas){
+      self.myId=datas.myId[0];
+    });
     return false;
   },
-  existroom: function(){
-    var self=this;
-    socket.on('roomIds',function(datas){
-      room=parseInt(datas.roomId);
-      if(self.rooms.indexOf(room)==-1){
-        self.rooms.push(room);
-      }
-      exist=self.remrooms.indexOf(room)
-      if(exist!=-1){
-        self.remrooms.splice(exist,1);
-      }
+  joinRoom: function(){
+    var self = this;
+    socket.on('hostroom',function(message){
+      self.exit({
+        nextLabel:'MainScene',
+        roomId:message.room,
+        secretkey: self.secretkey,
+        player:0,
+        myId:self.myId,
+      });
     });
+    return false;
   },
   setSecretKey: function(secretkey){
     this.secretkey=secretkey;
@@ -389,7 +380,7 @@ phina.define('EnterRoomScene',{
   init:function(param){
     this.superInit(param.secretkey);
     this.group=DisplayElement().addChildTo(this);
-    this.rooms=param.rooms;
+    this.myId=param.myId;
     this.backgroundColor='pink';
     // ラベルを生成
     this.label = Label({
@@ -398,7 +389,6 @@ phina.define('EnterRoomScene',{
       fontSize:80,
     }).addChildTo(this);
     this.bar=Placebar().addChildTo(this.group);
-
     for(var i=0;i<=9;i++){
       this.createNumButton(i);
     }
@@ -407,19 +397,28 @@ phina.define('EnterRoomScene',{
     this.goButton=GoButton().addChildTo(this.group);
     var self=this;
     this.goButton.onpointend=function(){
-      if(self.rooms.indexOf(parseInt(self.entering))==-1){
+      socket.emit('memjoin',{room:parseInt(self.entering)});
+      self.goButton.setInteractive(false);
+    };
+    this.askJoin();
+    this.setText();
+  },
+  askJoin: function(){
+    var self = this;
+    socket.on('memroom',function(message){
+      if(!message.room){
         alert("部屋がないよ");
+        self.goButton.setInteractive(true);
       }else{
         self.exit({
           nextLabel:'MainScene',
-          roomId:self.entering,
+          roomId:parseInt(self.entering),
           secretkey: self.secretkey,
           player:self.bar.valnum+1,
+          myId:self.myId,
         });
       }
-    };
-    this.setText();
-    this.existroom();
+    });
   },
   createNumButton: function(i){
     var self=this;
@@ -462,15 +461,6 @@ phina.define('EnterRoomScene',{
   ClearAll: function(){
     this.entering="";
     this.setText();
-  },
-  existroom: function(){
-    var self=this;
-    socket.on('roomIds',function(datas){
-      room=parseInt(datas.roomId);
-      if(self.rooms.indexOf(room)==-1){
-        self.rooms.push(room);
-      }
-    });
   },
 });
 //位置バークラス
@@ -576,12 +566,13 @@ phina.define('Card',{
   //クラス継承
   superClass:'Rectangle',
   //初期化
-  init: function(x,y,id,roomId,player){
+  init: function(x,y,id,roomId,player,myId){
     this.superInit();
     this.group=DisplayElement().addChildTo(this);
     this.active=false;
     this.selected=false;
     this.roomId=roomId;
+    this.myId=myId;
     this.player=player;
     this.id=id;
     this.x=x,
@@ -674,6 +665,7 @@ phina.define('Card',{
           x:-y,
           y:x,
           front:this.front,
+          myId:this.myId,
         });
         return false;
         break;
@@ -684,6 +676,7 @@ phina.define('Card',{
           x:-x,
           y:-y,
           front:this.front,
+          myId:this.myId,
         });
         return false;
         break;
@@ -694,6 +687,7 @@ phina.define('Card',{
           x:y,
           y:-x,
           front:this.front,
+          myId:this.myId,
         });
         return false;
         break;
@@ -704,6 +698,7 @@ phina.define('Card',{
           x:x,
           y:y,
           front:this.front,
+          myId:this.myId,
         });
         return false;
         break;
