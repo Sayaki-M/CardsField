@@ -113,7 +113,7 @@ phina.define('MainScene', {
     this.backgroundColor = '#05fff2';
     this.secretkey=param.secretkey;
     this.group=DisplayElement().addChildTo(this);
-    this.roomId=param.roomId!==undefined?param.roomId:"0000";
+    this.roomId=param.roomId!==undefined?param.roomId:"err!";
     this.myId=param.myId;
     this.player=param.player;  //0:親,1:左,2:対面,3:右
     var playerBG=RectangleShape({
@@ -134,15 +134,15 @@ phina.define('MainScene', {
       strokeWidth:0,
     }).addChildTo(this.group);
     this.roomNum=Label({
-      x:180,
+      x:100,
       y:OPPONENT_HEIGHT/2,
       fontSize:40,
     }).addChildTo(this.group);
     this.bg=Sprite("logo").addChildTo(this.group);
-    this.bg.x=480;
+    this.bg.x=310;
     this.bg.y=OPPONENT_HEIGHT/2;
-    this.bg.scaleX-=0.6;
-    this.bg.scaleY-=0.6;
+    this.bg.scaleX-=0.65;
+    this.bg.scaleY-=0.65;
     this.setRoomNumber();
     if(this.player==0){
       this.setDeck();
@@ -151,6 +151,26 @@ phina.define('MainScene', {
     }else{
       this.reqAllCardData();
       this.receiveAllCardData();
+    }
+    this.quitbutton=Button({
+      x: 580,
+      y: 60,
+      width:80,
+      height:80,
+      text: "Quit",
+      fill: 'red',
+      fontColor: 'white',
+    }).addChildTo(this.group);
+    this.quitbutton.alpha=0.8;
+    var self=this;
+    this.quitbutton.onpointstart=function(){
+      var quitpopup=QuitPopup().addChildTo(self.group);
+      quitpopup.quitbutton.onpointstart=function(){
+        socket.emit('quit',{room:self.roomId});
+        self.exit({
+          nextLabel:'TitleScene'
+        });
+      }
     }
   },
   reqAllCardData:function(){
@@ -207,7 +227,7 @@ phina.define('MainScene', {
     });
   },
   setRoomNumber:function(){
-    this.roomNum.text="room id:"+this.roomId;
+    this.roomNum.text="id:"+(Array(KETA).join('0') + this.roomId ).slice( -KETA );
   },
   onpointstart:function(){
     var self=this;
@@ -400,6 +420,14 @@ phina.define('EnterRoomScene',{
       socket.emit('memjoin',{room:parseInt(self.entering)});
       self.goButton.setInteractive(false);
     };
+    var quitbutton=QuitButton().addChildTo(this.group);
+    quitbutton.x=560;
+    quitbutton.y=60;
+    quitbutton.onpointstart=function(){
+      self.exit({
+        nextLabel:'TitleScene'
+      });
+    }
     this.askJoin();
     this.setText();
   },
@@ -603,8 +631,10 @@ phina.define('Card',{
     }
   },
   //クリック中の動き
-  onpointstart:function(){
-    this.selected=true;
+  onpointstart:function(e){
+    if(e.pointer.y>OPPONENT_HEIGHT){
+      this.selected=true;
+    }
   },
   onpointmove:function(e){
     if(this.active){
@@ -721,6 +751,81 @@ phina.define('Rectangle',{
       });
     },
 });
+//やめるポップアップ
+phina.define('QuitPopup',{
+  superClass: 'BasePopup',
+  init: function(){
+    this.superInit({width:500,height:300});
+    this.label=Label({
+      text:"Wanna quit?",
+      fill:'black',
+      y:-20,
+      fontSize:50,
+    }).addChildTo(this.group);
+    var self=this;
+    this.staybutton=Button({
+      x: -1*self.width/4,
+      y: 80,
+      width:120,
+      height:80,
+      text: "Stay",
+      fill: 'gray',
+      fontColor: 'white',
+    }).addChildTo(this);
+    this.quitbutton=Button({
+      x: self.width/4,
+      y: 80,
+      width:120,
+      height:80,
+      text: "Quit",
+      fill: 'red',
+      fontColor: 'white',
+    }).addChildTo(this);
+    this.staybutton.onpointstart=function(){
+      self.remove();
+    }
+  }
+});
+//ポップアップのもと
+phina.define('BasePopup',{
+  superClass:'RectangleShape',
+  init: function(options){
+    this.superInit(options);
+    this.fill='white';
+    this.strokeWidth=10;
+    this.stroke='red';
+    this.x=SCREEN_WIDTH/2;
+    this.y=SCREEN_HEIGHT/2;
+    this.cornerRadius=10,
+    this.group=DisplayElement().addChildTo(this);
+    var quit=QuitButton().addChildTo(this.group);
+    quit.x=this.width*0.4;
+    quit.y=this.height*(-0.35);
+    var self=this;
+    quit.onpointstart=function(){
+      self.remove();
+    }
+  },
+});
+//ポップアップの右上の×
+phina.define('QuitButton',{
+  superClass:'CircleShape',
+  init: function(){
+    this.superInit({
+      radius: 30,
+      fill: 'gray',
+      fontColor: 'white',
+    });
+    this.group=DisplayElement().addChildTo(this);
+    this.setInteractive(true);
+    this.label=Label({
+      text:"×",
+      fill:'white',
+      fontSize:60,
+    }).addChildTo(this.group);
+  },
+});
+
 // メイン処理
 phina.main(function() {
   // アプリケーション生成

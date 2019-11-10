@@ -1,5 +1,6 @@
 # 必要モジュールをインポートする
 import sqlite3
+import datetime
 
 # テーブルの作成
 def maketable():
@@ -10,9 +11,11 @@ def maketable():
     con.close()
 
 def addroom(num):
+    date=datetime.date.today()
+    date.strftime('%Y%m%d')
     con = sqlite3.connect('rooms.db',timeout=100)
     cur = con.cursor()
-    cur.execute("INSERT INTO rooms(num, mem, date) VALUES (?, ?, ?)", (num,1,"nya"))
+    cur.execute("INSERT INTO rooms(num, mem, date) VALUES (?, ?, ?)", (num,1,date))
     con.commit()
     con.close()
 
@@ -26,17 +29,19 @@ def addmember(num):
 def redmember(num):
     con = sqlite3.connect('rooms.db')
     cur = con.cursor()
+    cur.execute("UPDATE rooms SET mem = mem-1 WHERE num = (?)",(num,))
     data=cur.execute("SELECT mem FROM rooms WHERE num == (?)",(num,))
     res=data.fetchone()
     if(res!=None):
         mem=res[0]
-        if(mem>1):
-            cur.execute("UPDATE rooms SET mem = mem-1 WHERE num = (?)",(num,))
+        if(mem>0):
             con.commit()
             con.close()
         else:
             con.close()
             deleteroom(num)
+    else:
+        con.close()
         
     
 def deleteroom(num):
@@ -68,11 +73,12 @@ def sendall():
     return res
 
 
-
 if __name__ == '__main__':
     #maketable()
     #closedb()
     #addroom(3)
+    #redmember(3)
+    #deleteroom(3)
     #addmember(3)
     print(sendall())
     

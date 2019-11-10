@@ -113,15 +113,15 @@ class MyNamespace(Namespace):
         else:
             emit('memroom',{'room':False})
     
-    def on_hostquit(self, message):
-        oprdb.deleteroom(message['room'])
+    #def on_hostquit(self, message):
+    #    oprdb.deleteroom(message['room'])
         
-    def on_memquit(self, message):
+    def on_quit(self, message):
         oprdb.redmember(message['room'])
     
     def on_disconnect(self):
         room=rooms()
-        #oprdb.redmember(room[1])
+        oprdb.redmember(room[1])
         
     def on_answermyid(self):
         emit('myId',{'myId':rooms()})
