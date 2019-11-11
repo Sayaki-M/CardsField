@@ -4,6 +4,7 @@ from flask import Flask, render_template
 from flask_socketio import SocketIO, Namespace, emit, join_room, leave_room, rooms
 import oprdb
 import random
+import os
 
 # Set this variable to "threading", "eventlet" or "gevent" to test the
 # different async modes, or leave it set to None for the application to choose
@@ -146,4 +147,5 @@ socketio.on_namespace(MyNamespace('/test'))
 
 
 if __name__ == '__main__':
-    socketio.run(app)
+    port = int(os.environ.get("PORT", 5000))
+    socketio.run(app,port=port)
