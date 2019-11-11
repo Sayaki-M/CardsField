@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 from threading import Lock
-from flask import Flask, render_template, session, request
-from flask_socketio import SocketIO, Namespace, emit, join_room, leave_room, \
-    close_room, rooms, disconnect
+from flask import Flask, render_template
+from flask_socketio import SocketIO, Namespace, emit, join_room, leave_room, rooms
 import oprdb
 import random
 
@@ -117,10 +116,12 @@ class MyNamespace(Namespace):
     #    oprdb.deleteroom(message['room'])
         
     def on_quit(self, message):
+        leave_room(message['room'])
         oprdb.redmember(message['room'])
     
     def on_disconnect(self):
         room=rooms()
+        leave_room(room[1])
         oprdb.redmember(room[1])
         
     def on_answermyid(self):
@@ -145,4 +146,4 @@ socketio.on_namespace(MyNamespace('/test'))
 
 
 if __name__ == '__main__':
-    socketio.run(app,debug=True)
+    socketio.run(app)
