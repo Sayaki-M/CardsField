@@ -148,6 +148,5 @@ socketio.on_namespace(MyNamespace('/test'))
 
 
 if __name__ == '__main__':
-    oprdb.maketable()
     port = int(os.environ.get("PORT", 5000))
     socketio.run(app,port=port)
