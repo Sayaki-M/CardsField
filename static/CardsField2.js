@@ -97,7 +97,7 @@ var PIECEPLACE={
   AC: {x:XRIGHT,y:YBOTTOM},
 };
 namespace = '/test';
-var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port + namespace);
+var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port + namespace,{transports: ['websocket']});
 
 var GRAD=Canvas.createLinearGradient(CARD_WIDTH/2,-CARD_HEIGHT/2,-CARD_WIDTH/2,CARD_HEIGHT/2);
 GRAD.addColorStop(0,'green');
