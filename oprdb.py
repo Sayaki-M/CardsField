@@ -77,11 +77,11 @@ def sendall():
 
 
 if __name__ == '__main__':
-    #maketable()
+    maketable()
     #closedb()
     #addroom(3)
     #redmember(3)
     #deleteroom(3)
     #addmember(3)
-    print(sendall())
+    #print(sendall())
     
