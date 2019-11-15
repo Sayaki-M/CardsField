@@ -21,22 +21,22 @@ def addroom(num):
     date.strftime('%Y%m%d')
     con = connectdb()
     cur = con.cursor()
-    cur.execute("INSERT INTO rooms(num, mem, date) VALUES (?, ?, ?)", (num,1,date))
+    cur.execute("INSERT INTO rooms(num, mem, date) VALUES (%s, %s, %s)", (num,1,date))
     con.commit()
     con.close()
 
 def addmember(num):
     con = connectdb()
     cur = con.cursor()
-    cur.execute("UPDATE rooms SET mem = mem+1 WHERE num = (?)",(num,))
+    cur.execute("UPDATE rooms SET mem = mem+1 WHERE num = (%s)",(num,))
     con.commit()
     con.close()
 
 def redmember(num):
     con = connectdb()
     cur = con.cursor()
-    cur.execute("UPDATE rooms SET mem = mem-1 WHERE num = (?)",(num,))
-    data=cur.execute("SELECT mem FROM rooms WHERE num == (?)",(num,))
+    cur.execute("UPDATE rooms SET mem = mem-1 WHERE num = (%s)",(num,))
+    data=cur.execute("SELECT mem FROM rooms WHERE num == (%s)",(num,))
     res=data.fetchone()
     if(res!=None):
         mem=res[0]
@@ -53,7 +53,7 @@ def redmember(num):
 def deleteroom(num):
     con = connectdb()
     cur = con.cursor()
-    cur.execute("DELETE FROM rooms WHERE num = (?)",(num,))
+    cur.execute("DELETE FROM rooms WHERE num = (%s)",(num,))
     con.commit()
     con.close()
 
@@ -70,8 +70,8 @@ def sendrooms():
 def sendall():
     con = connectdb()
     cur = con.cursor()
-    data=cur.execute("SELECT * FROM rooms ORDER BY num ASC")
-    res=[dict(num=row[0],mem=row[1],date=row[2])for row in data.fetchall()]
+    cur.execute("SELECT * FROM rooms ORDER BY num ASC")
+    res=[dict(num=row[0],mem=row[1],date=row[2])for row in cur.fetchall()]
     con.close()
     return res
 
