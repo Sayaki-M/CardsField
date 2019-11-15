@@ -35,7 +35,7 @@ def addmember(num):
 def redmember(num):
     con = connectdb()
     cur = con.cursor()
-    cur.execute("UPDATE rooms SET mem = mem-1 WHERE num = (%s)",(num,))
+    cur.execute("UPDATE rooms SET mem = mem-1 WHERE num = %s",(num,))
     cur.execute("SELECT mem FROM rooms WHERE num = %s",(num,))
     res=cur.fetchone()
     if(res!=None):
@@ -53,7 +53,7 @@ def redmember(num):
 def deleteroom(num):
     con = connectdb()
     cur = con.cursor()
-    cur.execute("DELETE FROM rooms WHERE num = (%s)",(num,))
+    cur.execute("DELETE FROM rooms WHERE num = %s",(num,))
     con.commit()
     con.close()
 
