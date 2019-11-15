@@ -6,7 +6,7 @@ import datetime
 def connectdb():
     DATABASE_URL=os.environ['DATABASE_URL']
     return psycopg2.connect(DATABASE_URL,sslmode='require')
-    
+
 # テーブルの作成
 def maketable():
     con = connectdb()
@@ -14,7 +14,7 @@ def maketable():
     cur.execute('''CREATE TABLE rooms(num integer, mem integer, date text)''')
     con.commit()
     con.close()
-    
+
 
 def addroom(num):
     date=datetime.date.today()
@@ -31,7 +31,7 @@ def addmember(num):
     cur.execute("UPDATE rooms SET mem = mem+1 WHERE num = (?)",(num,))
     con.commit()
     con.close()
-    
+
 def redmember(num):
     con = connectdb()
     cur = con.cursor()
@@ -48,8 +48,8 @@ def redmember(num):
             deleteroom(num)
     else:
         con.close()
-        
-    
+
+
 def deleteroom(num):
     con = connectdb()
     cur = con.cursor()
@@ -60,8 +60,8 @@ def deleteroom(num):
 def sendrooms():
     con = connectdb()
     cur = con.cursor()
-    data=cur.execute("SELECT num FROM rooms ORDER BY num ASC")
-    res=[dict(num=row[0])for row in data.fetchall()]
+    cur.execute("SELECT num FROM rooms ORDER BY num ASC")
+    res=[dict(num=row[0])for row in cur.fetchall()]
     con.close()
     rooms=[d.get('num')for d in res]
     return rooms
@@ -84,4 +84,3 @@ if __name__ == '__main__':
     #deleteroom(3)
     #addmember(3)
     #print(sendall())
-    
