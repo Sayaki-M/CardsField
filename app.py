@@ -44,7 +44,7 @@ class MyNamespace(Namespace):
         emit('my_response',
              {'data': message['data'], 'count': session['receive_count']},
              broadcast=True)
-        
+
     def on_my_room_event(self, message):
         session['receive_count'] = session.get('receive_count', 0) + 1
         print(rooms())
@@ -57,43 +57,43 @@ class MyNamespace(Namespace):
         emit('my_response',
              {'data': 'Disconnected!', 'count': session['receive_count']})
         disconnect()
-        
+
     def on_leave(self, message):
         leave_room(message['room'])
         session['receive_count'] = session.get('receive_count', 0) + 1
         emit('my_response',
              {'data': 'In rooms: ' + ', '.join(rooms()),
               'count': session['receive_count']})
-        
+
     def on_join(self, message):
         join_room(message['room'])
         session['receive_count'] = session.get('receive_count', 0) + 1
         emit('my_response',
              {'data': 'In rooms: ' + ', '.join(rooms()),
               'count': session['receive_count']})
-    
+
     def on_connect(self):
         global thread
         with thread_lock:
             if thread is None:
                 thread = socketio.start_background_task(background_thread)
         emit('my_response', {'data': 'Connected', 'count': 0})
-    
+
     def on_close_room(self, message):
         session['receive_count'] = session.get('receive_count', 0) + 1
         emit('my_response', {'data': 'Room ' + message['room'] + ' is closing.',
                              'count': session['receive_count']},
              room=message['room'])
         close_room(message['room'])
-        
+
     def on_my_ping(self):
         emit('my_pong')
-    
+
     def on_disconnect(self):
         emit('my_response',{'data': rooms(), 'count': session['receive_count']},
              broadcast=True)
         print('Client disconnected', request.sid)
-    
+
     '''
     def on_hostjoin(self):
         rooms=oprdb.sendrooms()
@@ -103,7 +103,7 @@ class MyNamespace(Namespace):
         join_room(room)
         oprdb.addroom(room)
         emit('hostroom',{'room':room})
-        
+
     def on_memjoin(self, message):
         room=oprdb.sendrooms()
         if message['room'] in room:
@@ -112,20 +112,21 @@ class MyNamespace(Namespace):
             oprdb.addmember(message['room'])
         else:
             emit('memroom',{'room':False})
-    
+
     #def on_hostquit(self, message):
     #    oprdb.deleteroom(message['room'])
-        
+
     def on_quit(self, message):
         leave_room(message['room'])
         oprdb.redmember(message['room'])
-    
+
     def on_disconnect(self):
         room=rooms()
-        if(len(room)>1):
-            leave_room(room[1])
-            oprdb.redmember(room[1])
-        
+        for v in room:
+            if(isinstance(v,int)):
+                leave_room(v)
+                oprdb.redmember(v)
+
     def on_answermyid(self):
         emit('myId',{'myId':rooms()})
 
@@ -134,11 +135,11 @@ class MyNamespace(Namespace):
              message,
              room=message['room'],
              broadcast=True)
-    
+
     def on_reqcard(self,message):
         emit('reqcard',room=message['room'],
              broadcast=True)
-        
+
     def on_initcard(self,message):
         emit('initcard',
              {'cards':message['cards']},
