@@ -187,7 +187,7 @@ phina.define('MainScene', {
           id:nya.id,
           x:nya.x-FIELD_CENTER_X,
           y:nya.y-FIELD_CENTER_Y,
-          front:this.front,
+          front:nya.front,
         });
       });
       socket.emit('initcard',{room:self.roomId,cards:cards});
