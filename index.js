@@ -15,16 +15,16 @@ io.on("connection", (socket) => {
     remrooms = [...Array(10000)].map((_, i) => i).filter((i) => !rooms.has(i));
     room = remrooms[Math.floor(Math.random() * remrooms.length)];
     socket.join(room);
-    io.emit("hostroom", { room });
+    io.to(socket.id).emit("hostroom", { room });
   });
 
   socket.on("memjoin", async (msg) => {
     rooms = await getAllRoomNames();
     if (rooms.has(msg.room)) {
       socket.join(msg.room);
-      io.emit("memroom", { room: true });
+      io.to(socket.id).emit("memroom", { room: true });
     } else {
-      io.emit("memroom", { room: false });
+      io.to(socket.id).emit("memroom", { room: false });
     }
   });
 
@@ -37,7 +37,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("answermyid", () => {
-    io.emit("myId", { myId: socket.id });
+    io.to(socket.id).emit("myId", { myId: socket.id });
   });
 
   socket.on("reqcard", (msg) => {
